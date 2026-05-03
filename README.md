@@ -46,13 +46,13 @@ For those who prefer building from source:
 
 ## 🛠 Specifications
 
-*   **Platform Compatibility**: Fully compatible with **x86_64** and **ARM** Linux distributions[cite: 18].
-*   **Shell Support**: Optimized for GNOME Shell versions 47, 48, 49, and 50[cite: 21].
-*   **Licensing**: Distributed under the **GNU GPLv3** license[cite: 18, 20].
+*   **Platform Compatibility**: Fully compatible with **x86_64** and **ARM** Linux distributions.
+*   **Shell Support**: Optimized for GNOME Shell versions 47, 48, 49, and 50.
+*   **Licensing**: Distributed under the **GNU GPLv3** license.
 
 ## 🤝 Contributing
 
-We welcome community contributions! Feel free to:
+Feel free to:
 *   Report bugs via [Issues](https://github.com/ladoleo/systemd-manager-neo/issues).
 *   Propose new features or improvements.
 *   Submit Pull Requests with localizations or code optimizations.
