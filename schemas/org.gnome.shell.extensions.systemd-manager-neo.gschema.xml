@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.gnome.shell.extensions.systemd-manager-neo" path="/org/gnome/shell/extensions/systemd-manager-neo/">
+    <key name="favorite-services" type="as">
+      <default>[]</default>
+      <summary>List of favorite services</summary>
+      <description>Array of systemd unit names to display in the extension menu.</description>
+    </key>
+  </schema>
+</schemalist>

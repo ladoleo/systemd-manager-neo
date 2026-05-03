@@ -1,0 +1,7 @@
+jsconfig.json
+.vscode/
+.idea/
+schemas/gschemas.compiled
+locale/**/LC_MESSAGES/*.mo
+.DS_Store
+Thumbs.db

@@ -1,0 +1,8 @@
+{
+  "name": "Systemd Manager Neo",
+  "description": "Quickly manage systemd services from the top panel",
+  "uuid": "systemd-manager-neo@ladoleo.local",
+  "shell-version": ["47", "48", "49","50"],
+  "settings-schema": "org.gnome.shell.extensions.systemd-manager-neo",
+  "gettext-domain": "systemd-manager-neo"
+}

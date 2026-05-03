@@ -1,0 +1,63 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Systemd Manager Neo\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2026-05-03 00:00+0300\n"
+"PO-Revision-Date: 2026-05-03 00:00+0300\n"
+"Last-Translator: Lado Leo <ladoleo1705@gmail.com>\n"
+"Language-Team: Ukrainian\n"
+"Language: uk\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+msgid "Systemd Manager Neo"
+msgstr "Менеджер Systemd Neo"
+
+msgid "Settings"
+msgstr "Налаштування"
+
+msgid "List is empty. Open Settings."
+msgstr "Список порожній. Відкрийте Налаштування."
+
+msgid "FAILED"
+msgstr "ПОМИЛКА"
+
+msgid "Terminal emulator not found!"
+msgstr "Емулятор термінала не знайдено!"
+
+msgid "Restarting: %s"
+msgstr "Перезапуск: %s"
+
+msgid "Restarted: %s"
+msgstr "Перезапущено: %s"
+
+msgid "Error restarting: %s"
+msgstr "Помилка перезапуску: %s"
+
+msgid "Started: %s"
+msgstr "Запущено: %s"
+
+msgid "Stopped: %s"
+msgstr "Зупинено: %s"
+
+msgid "Error: Access denied or cancelled"
+msgstr "Помилка: Відмовлено в доступі або скасовано"
+
+msgid "Available Services"
+msgstr "Доступні сервіси"
+
+msgid "Search and toggle services to show in the top panel."
+msgstr "Шукайте та вмикайте сервіси для показу на верхній панелі."
+
+msgid "Search services..."
+msgstr "Пошук сервісів..."
+
+msgid "System"
+msgstr "Системний"
+
+msgid "User"
+msgstr "Користувацький"
+
+msgid "State"
+msgstr "Стан"
