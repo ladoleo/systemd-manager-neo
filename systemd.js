@@ -46,7 +46,7 @@ export async function getLoadedServices() {
                     name: u[0], 
                     activeState: u[3],
                     subState: u[4],
-                    objectPath: u[6], // Нам потрібен шлях до об'єкта для отримання статистики
+                    objectPath: u[6], // Шлях до об'єкта для отримання статистики
                     busType: bus
                 });
             }
