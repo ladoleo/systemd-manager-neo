@@ -19,7 +19,7 @@
 
 | Service Control | Performance Monitoring | Preferences (Libadwaita) |
 | :--- | :--- | :--- |
-| ![Main Menu](screenshots/Зscreenshot_1.png) | ![Stats View](screenshots/screenshot_2.png) | ![Settings](screenshots/screenshot_3.png) |
+| ![Main Menu](screenshots/screenshot_1.png) | ![Stats View](screenshots/screenshot_2.png) | ![Settings](screenshots/screenshot_3.png) |
 
 ## 🚀 Installation
 
