@@ -61,3 +61,21 @@ msgstr "Користувацький"
 
 msgid "State"
 msgstr "Стан"
+
+msgid "Favorite Services"
+msgstr "Обрані сервіси"
+
+msgid "Manage and reorder your pinned services."
+msgstr "Керуйте та сортуйте закріплені сервіси."
+
+msgid "Search and add services to your favorites."
+msgstr "Шукайте та додавайте сервіси до обраних."
+
+msgid "No favorites added yet."
+msgstr "Ще не додано жодного сервісу."
+
+msgid "...and %d more"
+msgstr "...і ще %d"
+
+msgid "Use search to find specific services."
+msgstr "Використовуйте пошук, щоб знайти потрібні сервіси."

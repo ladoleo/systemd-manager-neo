@@ -1,8 +1,9 @@
 {
   "name": "Systemd Manager Neo",
-  "description": "Quickly manage systemd services from the top panel",
+  "description": "Monitor and manage system and user systemd services directly from the GNOME top panel. Features RAM/Uptime tracking and easy log access.",
   "uuid": "systemd-manager-neo@ladoleo.local",
-  "shell-version": ["47", "48", "49","50"],
+  "url": "https://github.com/ladoleo/systemd-manager-neo",
+  "shell-version": ["47", "48", "49", "50"],
   "settings-schema": "org.gnome.shell.extensions.systemd-manager-neo",
   "gettext-domain": "systemd-manager-neo"
 }

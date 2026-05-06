@@ -15,87 +15,178 @@ import { ExtensionPreferences, gettext as _ } from 'resource:///org/gnome/Shell/
 
 export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
-        const settings = this.getSettings();
+        this._settings = this.getSettings();
+        this._allServices = new Set();
+        
+        // Масиви для зберігання створених рядків
+        this._favRows = [];
+        this._availRows = [];
+
         const page = new Adw.PreferencesPage();
         window.add(page);
 
-        const group = new Adw.PreferencesGroup({
-            title: _('Available Services'),
-            description: _('Search and toggle services to show in the top panel.')
+        // Група 1: Обрані сервіси (можна сортувати)
+        this._favGroup = new Adw.PreferencesGroup({
+            title: _('Favorite Services'),
+            description: _('Manage and reorder your pinned services.')
         });
-        page.add(group);
+        page.add(this._favGroup);
 
-        const searchEntry = new Gtk.SearchEntry({
+        // Група 2: Блок для пошуку (виступає як заголовок)
+        const searchGroup = new Adw.PreferencesGroup({
+            title: _('Available Services'),
+            description: _('Search and add services to your favorites.')
+        });
+        page.add(searchGroup);
+
+        this._searchEntry = new Gtk.SearchEntry({
             placeholder_text: _('Search services...'),
             margin_bottom: 12
         });
-        group.add(searchEntry);
+        this._searchEntry.connect('search-changed', () => this._updateAvailableList());
+        searchGroup.add(this._searchEntry);
 
-        const listGroup = new Adw.PreferencesGroup();
-        page.add(listGroup);
+        // Група 3: Сам список доступних сервісів (без заголовка)
+        this._availGroup = new Adw.PreferencesGroup();
+        page.add(this._availGroup);
 
-        const serviceRows = [];
+        // Завантажуємо всі сервіси з системи
+        this._loadServices();
 
+        // Перший рендер інтерфейсу
+        this._refreshUI();
+    }
+
+    _loadServices() {
         try {
             const sysConn = Gio.bus_get_sync(Gio.BusType.SYSTEM, null);
             const usrConn = Gio.bus_get_sync(Gio.BusType.SESSION, null);
-            const favorites = settings.get_strv('favorite-services') || [];
-            const uniqueServices = new Set();
-            
-            const processFiles = (connection, isSystem) => {
+
+            const processFiles = (connection) => {
                 try {
                     const result = connection.call_sync('org.freedesktop.systemd1', '/org/freedesktop/systemd1', 'org.freedesktop.systemd1.Manager', 'ListUnitFiles', null, null, Gio.DBusCallFlags.NONE, -1, null);
-                    const filesArray = result.recursiveUnpack()[0];
-                    
-                    filesArray.forEach(unit => {
-                        // Витягуємо чисту назву файлу зі шляху
-                        const name = unit[0].substring(unit[0].lastIndexOf('/') + 1);
-                        if (!name.endsWith('.service')) return;
-                        
-                        // Уникаємо дублікатів
-                        if (uniqueServices.has(name)) return;
-                        uniqueServices.add(name);
-
-                        const row = new Adw.ActionRow({ title: name });
-                        const typeLabel = isSystem ? _('System') : _('User');
-                        row.subtitle = `${typeLabel} | ${_('State')}: ${unit[1]}`;
-
-                        const toggle = new Gtk.Switch({
-                            active: favorites.includes(name),
-                            valign: Gtk.Align.CENTER
-                        });
-
-                        toggle.connect('state-set', (sw, switchState) => {
-                            let current = settings.get_strv('favorite-services') || [];
-                            if (switchState) {
-                                if (!current.includes(name)) current.push(name);
-                            } else {
-                                current = current.filter(s => s !== name);
-                            }
-                            settings.set_strv('favorite-services', current);
-                            return false;
-                        });
-
-                        row.add_suffix(toggle);
-                        listGroup.add(row);
-                        serviceRows.push({ row, name: name.toLowerCase() });
+                    const files = result.recursiveUnpack()[0];
+                    files.forEach(f => {
+                        const path = f[0];
+                        const name = path.split('/').pop();
+                        if (name.endsWith('.service')) {
+                            this._allServices.add(name);
+                        }
                     });
                 } catch (e) {}
             };
 
-            // Запускаємо парсинг обох шин
-            processFiles(sysConn, true);
-            processFiles(usrConn, false);
-
+            processFiles(sysConn);
+            processFiles(usrConn);
         } catch (e) {
             console.error('[Systemd Manager Neo] Error loading service files:', e);
         }
+    }
 
-        searchEntry.connect('search-changed', () => {
-            const text = searchEntry.get_text().toLowerCase();
-            serviceRows.forEach(item => {
-                item.row.set_visible(item.name.includes(text));
+    _refreshUI() {
+        // Правильно очищаємо групу обраних (видаляємо лише наші збережені рядки)
+        this._favRows.forEach(row => this._favGroup.remove(row));
+        this._favRows = []; // обнуляємо масив
+
+        const favs = this._settings.get_strv('favorite-services') || [];
+
+        if (favs.length === 0) {
+            const emptyRow = new Adw.ActionRow({ title: _('No favorites added yet.') });
+            this._favGroup.add(emptyRow);
+            this._favRows.push(emptyRow);
+        } else {
+            favs.forEach((name, index) => {
+                const row = new Adw.ActionRow({ title: name });
+                const box = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6, valign: Gtk.Align.CENTER });
+
+                // Кнопка Вгору
+                const btnUp = new Gtk.Button({ icon_name: 'go-up-symbolic' });
+                btnUp.set_sensitive(index > 0);
+                btnUp.connect('clicked', () => this._moveFav(index, -1));
+                box.append(btnUp);
+
+                // Кнопка Вниз
+                const btnDown = new Gtk.Button({ icon_name: 'go-down-symbolic' });
+                btnDown.set_sensitive(index < favs.length - 1);
+                btnDown.connect('clicked', () => this._moveFav(index, 1));
+                box.append(btnDown);
+
+                // Кнопка Видалити
+                const btnRemove = new Gtk.Button({ icon_name: 'user-trash-symbolic' });
+                btnRemove.add_css_class('destructive-action');
+                btnRemove.connect('clicked', () => this._toggleFav(name, false));
+                box.append(btnRemove);
+
+                row.add_suffix(box);
+                this._favGroup.add(row);
+                this._favRows.push(row); // Зберігаємо посилання для майбутнього очищення
             });
+        }
+
+        // Оновлюємо нижній список
+        this._updateAvailableList();
+    }
+
+    _updateAvailableList() {
+        // Правильно очищаємо доступні сервіси
+        this._availRows.forEach(row => this._availGroup.remove(row));
+        this._availRows = [];
+
+        const favs = this._settings.get_strv('favorite-services') || [];
+        const searchText = this._searchEntry.get_text().toLowerCase();
+
+        let available = Array.from(this._allServices)
+            .filter(s => !favs.includes(s))
+            .filter(s => s.toLowerCase().includes(searchText))
+            .sort();
+
+        const MAX_RESULTS = 50;
+        const shown = available.slice(0, MAX_RESULTS);
+
+        shown.forEach(name => {
+            const row = new Adw.ActionRow({ title: name });
+            const btnAdd = new Gtk.Button({ icon_name: 'list-add-symbolic', valign: Gtk.Align.CENTER });
+            
+            btnAdd.connect('clicked', () => {
+                this._toggleFav(name, true);
+            });
+
+            row.add_suffix(btnAdd);
+            this._availGroup.add(row);
+            this._availRows.push(row); // Зберігаємо посилання
         });
+
+        if (available.length > MAX_RESULTS) {
+            const moreRow = new Adw.ActionRow({ 
+                title: _('...and %d more').replace('%d', available.length - MAX_RESULTS),
+                subtitle: _('Use search to find specific services.')
+            });
+            this._availGroup.add(moreRow);
+            this._availRows.push(moreRow); // Зберігаємо посилання
+        }
+    }
+
+    _moveFav(index, direction) {
+        let favs = this._settings.get_strv('favorite-services') || [];
+        const newIndex = index + direction;
+        
+        if (newIndex >= 0 && newIndex < favs.length) {
+            const temp = favs[index];
+            favs[index] = favs[newIndex];
+            favs[newIndex] = temp;
+            this._settings.set_strv('favorite-services', favs);
+            this._refreshUI();
+        }
+    }
+
+    _toggleFav(name, isAdding) {
+        let favs = this._settings.get_strv('favorite-services') || [];
+        if (isAdding) {
+            if (!favs.includes(name)) favs.push(name);
+        } else {
+            favs = favs.filter(s => s !== name);
+        }
+        this._settings.set_strv('favorite-services', favs);
+        this._refreshUI();
     }
 }

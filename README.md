@@ -32,6 +32,7 @@ For those who prefer building from source:
 1.  **Clone the repository**:
     ```bash
     git clone https://github.com/ladoleo/systemd-manager-neo.git
+    cd systemd-manager-neo
     ```
 2.  **Compile schemas**:
     ```bash
