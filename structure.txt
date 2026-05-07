@@ -1,0 +1,39 @@
+.
+├── extension.js
+├── LICENSE.txt
+├── locale
+│   ├── de
+│   │   └── LC_MESSAGES
+│   │       └── systemd-manager-neo.mo
+│   ├── es
+│   │   └── LC_MESSAGES
+│   │       └── systemd-manager-neo.mo
+│   ├── pl
+│   │   └── LC_MESSAGES
+│   │       └── systemd-manager-neo.mo
+│   ├── sk
+│   │   └── LC_MESSAGES
+│   │       └── systemd-manager-neo.mo
+│   └── uk
+│       └── LC_MESSAGES
+│           └── systemd-manager-neo.mo
+├── metadata.json
+├── po
+│   ├── de.po
+│   ├── es.po
+│   ├── pl.po
+│   ├── sk.po
+│   └── uk.po
+├── prefs.js
+├── README.md
+├── schemas
+│   ├── gschemas.compiled
+│   └── org.gnome.shell.extensions.systemd-manager-neo.gschema.xml
+├── screenshots
+│   ├── screenshot_1.png
+│   ├── screenshot_2.png
+│   └── screenshot_3.png
+├── structure.txt
+└── systemd.js
+
+15 directories, 22 files

@@ -76,3 +76,24 @@ msgstr "...i %d więcej"
 
 msgid "Use search to find specific services."
 msgstr "Użyj wyszukiwania, aby znaleźć konkretne usługi."
+
+msgid "All"
+msgstr "Wszystkie"
+
+msgid "Enabled"
+msgstr "Włączone"
+
+msgid "Disabled"
+msgstr "Wyłączone"
+
+msgid "Load next %d services"
+msgstr "Wczytaj kolejne %d usług"
+
+msgid "Load More"
+msgstr "Wczytaj więcej"
+
+msgid "Load All"
+msgstr "Wczytaj wszystko"
+
+msgid "You can load more or show the full list at once."
+msgstr "Możesz wczytać więcej lub wyświetlić całą listę naraz."

@@ -77,3 +77,24 @@ msgstr "...a ďalších %d"
 
 msgid "Use search to find specific services."
 msgstr "Hľadajte konkrétne služby pomocou vyhľadávania."
+
+msgid "All"
+msgstr "Všetky"
+
+msgid "Enabled"
+msgstr "Povolené"
+
+msgid "Disabled"
+msgstr "Zakázané"
+
+msgid "Load next %d services"
+msgstr "Načítať ďalších %d služieb"
+
+msgid "Load More"
+msgstr "Načítať viac"
+
+msgid "Load All"
+msgstr "Načítať všetko"
+
+msgid "You can load more or show the full list at once."
+msgstr "Môžete načítať ďalšie alebo zobraziť celý zoznam naraz."

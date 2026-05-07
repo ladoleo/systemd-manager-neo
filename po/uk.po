@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Systemd Manager Neo\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-05-03 00:00+0300\n"
-"PO-Revision-Date: 2026-05-03 00:00+0300\n"
+"POT-Creation-Date: 2026-05-07 00:00+0300\n"
+"PO-Revision-Date: 2026-05-07 00:00+0300\n"
 "Last-Translator: Lado Leo <ladoleo1705@gmail.com>\n"
 "Language-Team: Ukrainian\n"
 "Language: uk\n"
@@ -44,20 +44,11 @@ msgstr "Зупинено: %s"
 msgid "Error: Access denied or cancelled"
 msgstr "Помилка: Відмовлено в доступі або скасовано"
 
-msgid "Available Services"
-msgstr "Доступні сервіси"
-
-msgid "Search and toggle services to show in the top panel."
-msgstr "Шукайте та вмикайте сервіси для показу на верхній панелі."
-
-msgid "Search services..."
-msgstr "Пошук сервісів..."
-
 msgid "System"
-msgstr "Системний"
+msgstr "Система"
 
 msgid "User"
-msgstr "Користувацький"
+msgstr "Користувач"
 
 msgid "State"
 msgstr "Стан"
@@ -68,8 +59,14 @@ msgstr "Обрані сервіси"
 msgid "Manage and reorder your pinned services."
 msgstr "Керуйте та сортуйте закріплені сервіси."
 
+msgid "Available Services"
+msgstr "Доступні сервіси"
+
 msgid "Search and add services to your favorites."
 msgstr "Шукайте та додавайте сервіси до обраних."
+
+msgid "Search services..."
+msgstr "Шукати сервіси..."
 
 msgid "No favorites added yet."
 msgstr "Ще не додано жодного сервісу."
@@ -79,3 +76,24 @@ msgstr "...і ще %d"
 
 msgid "Use search to find specific services."
 msgstr "Використовуйте пошук, щоб знайти потрібні сервіси."
+
+msgid "All"
+msgstr "Всі"
+
+msgid "Enabled"
+msgstr "Увімкнені"
+
+msgid "Disabled"
+msgstr "Вимкнені"
+
+msgid "Load next %d services"
+msgstr "Завантажити наступні %d сервісів"
+
+msgid "Load More"
+msgstr "Завантажити ще"
+
+msgid "Load All"
+msgstr "Завантажити все"
+
+msgid "You can load more or show the full list at once."
+msgstr "Ви можете довантажити ще або показати весь список одразу."
