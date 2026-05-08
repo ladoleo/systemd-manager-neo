@@ -97,3 +97,51 @@ msgstr "Завантажити все"
 
 msgid "You can load more or show the full list at once."
 msgstr "Ви можете довантажити ще або показати весь список одразу."
+
+msgid "Services"
+msgstr "Сервіси"
+
+msgid "Groups"
+msgstr "Групи"
+
+msgid "Service Groups"
+msgstr "Групи сервісів"
+
+msgid "Create groups to manage multiple services at once."
+msgstr "Створюйте групи для керування кількома сервісами одночасно."
+
+msgid "New group name..."
+msgstr "Назва нової групи..."
+
+msgid "Add Group"
+msgstr "Додати групу"
+
+msgid "%d services attached"
+msgstr "%d сервісів додано"
+
+msgid "No favorite services to add. Go to Services tab first."
+msgstr "Немає обраних сервісів. Спершу додайте їх на вкладці Сервіси."
+
+msgid "Remove this group"
+msgstr "Видалити цю групу"
+
+msgid "Delete"
+msgstr "Видалити"
+
+msgid "Start All"
+msgstr "Запустити всі"
+
+msgid "Stop All"
+msgstr "Зупинити всі"
+
+msgid "Starting group: %s"
+msgstr "Запуск групи: %s"
+
+msgid "Group started: %s (%d/%d)"
+msgstr "Групу запущено: %s (%d/%d)"
+
+msgid "Stopping group: %s"
+msgstr "Зупинка групи: %s"
+
+msgid "Group stopped: %s (%d/%d)"
+msgstr "Групу зупинено: %s (%d/%d)"

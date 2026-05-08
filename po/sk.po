@@ -98,3 +98,51 @@ msgstr "Načítať všetko"
 
 msgid "You can load more or show the full list at once."
 msgstr "Môžete načítať ďalšie alebo zobraziť celý zoznam naraz."
+
+msgid "Services"
+msgstr "Služby"
+
+msgid "Groups"
+msgstr "Skupiny"
+
+msgid "Service Groups"
+msgstr "Skupiny služieb"
+
+msgid "Create groups to manage multiple services at once."
+msgstr "Vytvorte skupiny na správu viacerých služieb naraz."
+
+msgid "New group name..."
+msgstr "Nový názov skupiny..."
+
+msgid "Add Group"
+msgstr "Pridať skupinu"
+
+msgid "%d services attached"
+msgstr "Pripojených %d služieb"
+
+msgid "No favorite services to add. Go to Services tab first."
+msgstr "Žiadne obľúbené služby na pridanie. Prejdite najskôr na kartu Služby."
+
+msgid "Remove this group"
+msgstr "Odstrániť túto skupinu"
+
+msgid "Delete"
+msgstr "Odstrániť"
+
+msgid "Start All"
+msgstr "Spustiť všetky"
+
+msgid "Stop All"
+msgstr "Zastaviť všetky"
+
+msgid "Starting group: %s"
+msgstr "Spúšťa sa skupina: %s"
+
+msgid "Group started: %s (%d/%d)"
+msgstr "Skupina spustená: %s (%d/%d)"
+
+msgid "Stopping group: %s"
+msgstr "Zastavuje sa skupina: %s"
+
+msgid "Group stopped: %s (%d/%d)"
+msgstr "Skupina zastavená: %s (%d/%d)"

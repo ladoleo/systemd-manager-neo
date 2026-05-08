@@ -1,11 +1,6 @@
 /*
  * Systemd Manager Neo
  * Copyright (C) 2026 Lado Leo
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
  */
 
 import { Extension, gettext as _ } from 'resource:///org/gnome/shell/extensions/extension.js';
@@ -48,15 +43,27 @@ class Indicator extends PanelMenu.Button {
         const loadedServices = await Systemd.getLoadedServices(); 
         const favorites = this._settings.get_strv('favorite-services') || [];
 
-        if (favorites.length === 0) {
+        let groups = {};
+        try {
+            const jsonStr = this._settings.get_string('service-groups');
+            groups = jsonStr ? JSON.parse(jsonStr) : {};
+        } catch (e) {
+            console.error('[Systemd Manager Neo] Error parsing groups:', e);
+        }
+
+        const groupedServices = new Set();
+        Object.values(groups).forEach(groupArr => groupArr.forEach(s => groupedServices.add(s)));
+
+        const standaloneFavorites = favorites.filter(s => !groupedServices.has(s));
+
+        if (favorites.length === 0 && Object.keys(groups).length === 0) {
             const item = new PopupMenu.PopupMenuItem(_('List is empty. Open Settings.'));
             item.sensitive = false;
             this._servicesSection.addMenuItem(item);
             return;
         }
 
-        // Паралельно завантажуємо статистику для всіх сервісів
-        const itemPromises = favorites.map(async (favName) => {
+        const fetchServiceData = async (favName) => {
             const loadedSvc = loadedServices.find(s => s.name === favName);
             const isActive = loadedSvc ? (loadedSvc.activeState === 'active') : false;
             const isFailed = loadedSvc ? (loadedSvc.activeState === 'failed') : false; 
@@ -67,7 +74,6 @@ class Indicator extends PanelMenu.Button {
                 labelText = `${labelText} [${_('FAILED')}]`;
             }
 
-            // Якщо сервіс працює, витягуємо його статистику
             if (isActive && loadedSvc && loadedSvc.objectPath) {
                 const stats = await Systemd.getServiceStats(loadedSvc.objectPath, loadedSvc.busType);
                 let statParts = [];
@@ -76,27 +82,19 @@ class Indicator extends PanelMenu.Button {
                 if (stats.uptime !== 'N/A') statParts.push(`UP: ${stats.uptime}`);
                 if (stats.ram !== 'N/A') statParts.push(`RAM: ${stats.ram}`);
                 
-                if (statParts.length > 0) {
-                    labelText += `   [${statParts.join(' | ')}]`;
-                }
+                if (statParts.length > 0) labelText += `   [${statParts.join(' | ')}]`;
             }
-            return { favName, labelText, isActive, isFailed }; 
-        });
+            return { favName, labelText, isActive, isFailed };
+        };
 
-        // Чекаємо, поки всі дані зберуться
-        const itemsData = await Promise.all(itemPromises);
-
-        // Будуємо елементи меню
-        itemsData.forEach(data => {
+        const buildServiceMenuItem = (data) => {
             const item = new PopupMenu.PopupSwitchMenuItem(data.labelText, data.isActive);
             
-            // Контейнер для кнопок
             const btnBox = new St.BoxLayout({
                 vertical: false,
                 style: 'margin-right: 14px; margin-left: 8px;' 
             });
 
-            // 1. Кнопка логів
             const logBtn = new St.Button({
                 child: new St.Icon({ icon_name: 'utilities-terminal-symbolic', icon_size: 16 }),
                 style_class: 'button',
@@ -104,16 +102,11 @@ class Indicator extends PanelMenu.Button {
             });
             logBtn.connect('clicked', () => {
                 this.menu.close(); 
-                
                 const terminals = [
-                    { bin: 'gnome-terminal', arg: '--' }, 
-                    { bin: 'kgx', arg: '-e' },            
-                    { bin: 'ptyxis', arg: '--' },         
-                    { bin: 'terminator', arg: '-x' },
-                    { bin: 'kitty', arg: '--' },
-                    { bin: 'alacritty', arg: '-e' },
-                    { bin: 'konsole', arg: '-e' },
-                    { bin: 'xterm', arg: '-e' }           
+                    { bin: 'gnome-terminal', arg: '--' }, { bin: 'kgx', arg: '-e' },            
+                    { bin: 'ptyxis', arg: '--' }, { bin: 'terminator', arg: '-x' },
+                    { bin: 'kitty', arg: '--' }, { bin: 'alacritty', arg: '-e' },
+                    { bin: 'konsole', arg: '-e' }, { bin: 'xterm', arg: '-e' }           
                 ];
 
                 let launched = false;
@@ -124,67 +117,124 @@ class Indicator extends PanelMenu.Button {
                         break;
                     }
                 }
-
-                if (!launched) {
-                    Main.notify(_('Systemd Manager Neo'), _('Terminal emulator not found!'));
-                }
+                if (!launched) Main.notify(_('Systemd Manager Neo'), _('Terminal emulator not found!'));
             });
 
-            // 2. Кнопка рестарту
             const restartBtn = new St.Button({
                 child: new St.Icon({ icon_name: 'view-refresh-symbolic', icon_size: 16 }),
                 style_class: 'button',
                 style: 'border-radius: 6px;' 
             });
-            
             restartBtn.connect('clicked', async () => {
                 this.menu.close();
                 Main.notify(_('Systemd Manager Neo'), _('Restarting: %s').replace('%s', data.favName));
-                
                 const success = await Systemd.restartService(data.favName);
-                if (success) {
-                    Main.notify(_('Systemd Manager Neo'), _('Restarted: %s').replace('%s', data.favName));
-                } else {
-                    Main.notify(_('Systemd Manager Neo'), _('Error restarting: %s').replace('%s', data.favName));
-                }
+                if (success) Main.notify(_('Systemd Manager Neo'), _('Restarted: %s').replace('%s', data.favName));
+                else Main.notify(_('Systemd Manager Neo'), _('Error restarting: %s').replace('%s', data.favName));
             });
 
-            // Додаємо кнопки в контейнер
             btnBox.add_child(logBtn);
             btnBox.add_child(restartBtn);
 
-            // 3. Іконка падіння (якщо сервіс впав)
             if (data.isFailed) {
                 const errorIcon = new St.Icon({
-                    icon_name: 'dialog-error-symbolic', 
-                    icon_size: 16,
+                    icon_name: 'dialog-error-symbolic', icon_size: 16,
                     style: 'color: #ed333b; margin-left: 8px; margin-right: 4px;' 
                 });
                 btnBox.add_child(errorIcon);
             }
 
-            // МАГІЯ ЛЕЙАУТУ: Вставляємо блок кнопок на самий початок рядка (індекс 0)
             item.insert_child_at_index(btnBox, 0);
 
-            // Дія при кліку на тумблер
             item.connect('toggled', async (i, state) => {
                 let success = false;
-                if (state) {
-                    success = await Systemd.startService(data.favName);
-                } else {
-                    success = await Systemd.stopService(data.favName);
-                }
+                if (state) success = await Systemd.startService(data.favName);
+                else success = await Systemd.stopService(data.favName);
                 
-                if (success) {
-                    Main.notify(_('Systemd Manager Neo'), (state ? _('Started: %s') : _('Stopped: %s')).replace('%s', data.favName));
-                } else {
+                if (success) Main.notify(_('Systemd Manager Neo'), (state ? _('Started: %s') : _('Stopped: %s')).replace('%s', data.favName));
+                else {
                     item.setToggleState(!state);
                     Main.notify(_('Systemd Manager Neo'), _('Error: Access denied or cancelled'));
                 }
             });
-            
-            this._servicesSection.addMenuItem(item);
-        });
+            return item;
+        };
+
+        let hasGroupsRendered = false;
+        for (const [groupName, groupServices] of Object.entries(groups)) {
+            if (groupServices.length === 0) continue;
+            hasGroupsRendered = true;
+
+            const subMenu = new PopupMenu.PopupSubMenuMenuItem(groupName);
+
+            // Завантажуємо статистику для сервісів цієї групи
+            const groupDataPromises = groupServices.map(fetchServiceData);
+            const groupItemsData = await Promise.all(groupDataPromises);
+
+            // --- МІКРО-МОНІТОРИНГ ГРУПИ ---
+            // Якщо хоча б один сервіс у групі має статус failed (впав)
+            const hasFailedService = groupItemsData.some(data => data.isFailed);
+            if (hasFailedService) {
+                // Робимо текст групи червоним
+                subMenu.label.set_style('color: #ed333b;');
+                
+                // Додаємо іконку помилки біля назви групи (індекс 2 - після тексту)
+                const groupErrorIcon = new St.Icon({
+                    icon_name: 'dialog-error-symbolic',
+                    icon_size: 16,
+                    style: 'color: #ed333b; margin-left: 6px;'
+                });
+                subMenu.insert_child_at_index(groupErrorIcon, 2);
+            }
+            // ------------------------------
+
+            const startAllItem = new PopupMenu.PopupImageMenuItem(_('Start All'), 'media-playback-start-symbolic');
+            startAllItem.connect('activate', async () => {
+                this.menu.close();
+                Main.notify(_('Systemd Manager Neo'), _('Starting group: %s').replace('%s', groupName));
+                let successCount = 0;
+                for (let s of groupServices) {
+                    if (await Systemd.startService(s)) successCount++;
+                }
+                Main.notify(_('Systemd Manager Neo'), _('Group started: %s (%d/%d)').replace('%s', groupName).replace('%d', successCount).replace('%d', groupServices.length));
+            });
+            subMenu.menu.addMenuItem(startAllItem);
+
+            const stopAllItem = new PopupMenu.PopupImageMenuItem(_('Stop All'), 'media-playback-stop-symbolic');
+            stopAllItem.connect('activate', async () => {
+                this.menu.close();
+                Main.notify(_('Systemd Manager Neo'), _('Stopping group: %s').replace('%s', groupName));
+                let successCount = 0;
+                for (let s of groupServices) {
+                    if (await Systemd.stopService(s)) successCount++;
+                }
+                Main.notify(_('Systemd Manager Neo'), _('Group stopped: %s (%d/%d)').replace('%s', groupName).replace('%d', successCount).replace('%d', groupServices.length));
+            });
+            subMenu.menu.addMenuItem(stopAllItem);
+
+            subMenu.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+
+            groupItemsData.forEach(data => {
+                const uiItem = buildServiceMenuItem(data);
+                subMenu.menu.addMenuItem(uiItem);
+            });
+
+            this._servicesSection.addMenuItem(subMenu);
+        }
+
+        if (standaloneFavorites.length > 0) {
+            if (hasGroupsRendered) {
+                this._servicesSection.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+            }
+
+            const standaloneDataPromises = standaloneFavorites.map(fetchServiceData);
+            const standaloneItemsData = await Promise.all(standaloneDataPromises);
+
+            standaloneItemsData.forEach(data => {
+                const uiItem = buildServiceMenuItem(data);
+                this._servicesSection.addMenuItem(uiItem);
+            });
+        }
     }
 
     destroy() {

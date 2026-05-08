@@ -15,13 +15,17 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
         this._allServices = [];
         this._favRows = [];
         this._availRows = [];
+        this._groupRows = []; // Для збереження віджетів груп
 
-        const page = new Adw.PreferencesPage();
-        window.add(page);
+        // --- ВКЛАДКА 1: СЕРВІСИ ---
+        const pageServices = new Adw.PreferencesPage({
+            title: _('Services'),
+            icon_name: 'emblem-system-symbolic'
+        });
+        window.add(pageServices);
 
-        // Намагаємося знайти правильний об'єкт скролу для фіксації позиції
         GLib.idle_add(GLib.PRIORITY_DEFAULT, () => {
-            const scrolled = page.get_ancestor(Gtk.ScrolledWindow);
+            const scrolled = pageServices.get_ancestor(Gtk.ScrolledWindow);
             if (scrolled) {
                 this._adjustment = scrolled.get_vadjustment();
             } else {
@@ -30,19 +34,17 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
             return GLib.SOURCE_REMOVE;
         });
 
-        // Група 1: Обрані сервіси
         this._favGroup = new Adw.PreferencesGroup({
             title: _('Favorite Services'),
             description: _('Manage and reorder your pinned services.')
         });
-        page.add(this._favGroup);
+        pageServices.add(this._favGroup);
 
-        // Група 2: Пошук та фільтри
         const searchGroup = new Adw.PreferencesGroup({
             title: _('Available Services'),
             description: _('Search and add services to your favorites.')
         });
-        page.add(searchGroup);
+        pageServices.add(searchGroup);
 
         this._searchEntry = new Gtk.SearchEntry({
             placeholder_text: _('Search services...'),
@@ -55,15 +57,9 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
         this._filterState = 'all';
         this._currentLimit = 50;
 
-        const filterBox = new Gtk.Box({
-            orientation: Gtk.Orientation.HORIZONTAL,
-            spacing: 12,
-            margin_bottom: 12,
-            halign: Gtk.Align.CENTER
-        });
+        const filterBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 12, margin_bottom: 12, halign: Gtk.Align.CENTER });
         searchGroup.add(filterBox);
 
-        // Кнопки-фільтри (linked)
         const busGroup = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL });
         busGroup.add_css_class('linked');
         const btnBusAll = new Gtk.ToggleButton({ label: _('All') });
@@ -92,13 +88,51 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
             this._updateAvailableList('reset'); 
         };
 
-        [btnBusAll, btnBusSys, btnBusUsr, btnStateAll, btnStateEn, btnStateDis].forEach(btn => 
-            btn.connect('toggled', updateFilters)
-        );
+        [btnBusAll, btnBusSys, btnBusUsr, btnStateAll, btnStateEn, btnStateDis].forEach(btn => btn.connect('toggled', updateFilters));
 
         this._availGroup = new Adw.PreferencesGroup();
-        page.add(this._availGroup);
+        pageServices.add(this._availGroup);
 
+        // --- ВКЛАДКА 2: ГРУПИ (ПРОФІЛІ) ---
+        const pageGroups = new Adw.PreferencesPage({
+            title: _('Groups'),
+            icon_name: 'folder-system-symbolic'
+        });
+        window.add(pageGroups);
+
+        const createGroupPref = new Adw.PreferencesGroup({
+            title: _('Service Groups'),
+            description: _('Create groups to manage multiple services at once.')
+        });
+        pageGroups.add(createGroupPref);
+
+        // Поле для створення нової групи
+        const addGroupBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 12, margin_bottom: 24 });
+        const addGroupEntry = new Gtk.Entry({ placeholder_text: _('New group name...'), hexpand: true });
+        const addGroupBtn = new Gtk.Button({ label: _('Add Group'), valign: Gtk.Align.CENTER });
+        addGroupBtn.add_css_class('suggested-action');
+        addGroupBox.append(addGroupEntry);
+        addGroupBox.append(addGroupBtn);
+        createGroupPref.add(addGroupBox);
+
+        this._groupsList = new Adw.PreferencesGroup();
+        pageGroups.add(this._groupsList);
+
+        addGroupBtn.connect('clicked', () => {
+            const name = addGroupEntry.get_text().trim();
+            if (name) {
+                let groups = this._getGroups();
+                if (!groups[name]) {
+                    groups[name] = []; // Створюємо пусту групу
+                    this._saveGroups(groups);
+                    addGroupEntry.set_text('');
+                    this._refreshGroupsUI();
+                }
+            }
+        });
+
+
+        // --- ІНІЦІАЛІЗАЦІЯ ---
         this._loadServices();
         this._refreshUI();
 
@@ -107,12 +141,91 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
             this._allServices = null;
             this._favRows = null;
             this._availRows = null;
+            this._groupRows = null;
             this._favGroup = null;
             this._availGroup = null;
+            this._groupsList = null;
             this._searchEntry = null;
             this._adjustment = null;
         });
     }
+
+    // --- ЛОГІКА РОБОТИ З JSON ---
+    _getGroups() {
+        try {
+            const jsonStr = this._settings.get_string('service-groups');
+            return jsonStr ? JSON.parse(jsonStr) : {};
+        } catch (e) {
+            console.error('[Systemd Manager Neo] Error parsing groups JSON:', e);
+            return {};
+        }
+    }
+
+    _saveGroups(groups) {
+        this._settings.set_string('service-groups', JSON.stringify(groups));
+    }
+
+    // --- РЕНДЕР ГРУП ---
+    _refreshGroupsUI() {
+        if (!this._groupsList) return;
+
+        this._groupRows.forEach(row => this._groupsList.remove(row));
+        this._groupRows = [];
+
+        const groups = this._getGroups();
+        const favs = this._settings.get_strv('favorite-services') || [];
+
+        for (const [groupName, groupServices] of Object.entries(groups)) {
+            const expander = new Adw.ExpanderRow({ 
+                title: groupName, 
+                subtitle: _('%d services attached').replace('%d', groupServices.length) 
+            });
+
+            // Додаємо всі "Обрані" сервіси як перемикачі (Switch) всередину групи
+            if (favs.length === 0) {
+                const emptyRow = new Adw.ActionRow({ title: _('No favorite services to add. Go to Services tab first.') });
+                expander.add_row(emptyRow);
+            } else {
+                favs.forEach(favName => {
+                    const row = new Adw.ActionRow({ title: favName });
+                    const sw = new Gtk.Switch({ valign: Gtk.Align.CENTER });
+                    
+                    sw.set_active(groupServices.includes(favName));
+                    
+                    sw.connect('notify::active', () => {
+                        let g = this._getGroups();
+                        if (sw.get_active()) {
+                            if (!g[groupName].includes(favName)) g[groupName].push(favName);
+                        } else {
+                            g[groupName] = g[groupName].filter(s => s !== favName);
+                        }
+                        this._saveGroups(g);
+                        expander.set_subtitle(_('%d services attached').replace('%d', g[groupName].length));
+                    });
+                    
+                    row.add_suffix(sw);
+                    expander.add_row(row);
+                });
+            }
+
+            // Кнопка видалення групи (у самому низу списку)
+            const deleteRow = new Adw.ActionRow({ title: _('Remove this group') });
+            const btnDelete = new Gtk.Button({ label: _('Delete'), valign: Gtk.Align.CENTER });
+            btnDelete.add_css_class('destructive-action');
+            btnDelete.connect('clicked', () => {
+                let g = this._getGroups();
+                delete g[groupName];
+                this._saveGroups(g);
+                this._refreshGroupsUI();
+            });
+            deleteRow.add_suffix(btnDelete);
+            expander.add_row(deleteRow);
+
+            this._groupsList.add(expander);
+            this._groupRows.push(expander);
+        }
+    }
+
 
     _loadServices() {
         this._allServices = []; 
@@ -164,6 +277,9 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
             });
         }
         this._updateAvailableList('refresh');
+        
+        // Оновлюємо також і вкладку груп, бо список обраних міг змінитись
+        this._refreshGroupsUI(); 
     }
 
     _updateAvailableList(mode = 'reset') {
@@ -171,7 +287,6 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
 
         if (mode === 'reset') this._currentLimit = 50;
 
-        // Попередній розрахунок фільтрованого списку
         const favs = this._settings.get_strv('favorite-services') || [];
         const searchText = this._searchEntry.get_text().toLowerCase();
 
@@ -183,12 +298,10 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
             return true;
         }).sort((a, b) => a.name.localeCompare(b.name));
 
-        // Якщо режим "Завантажити все", знімаємо ліміт
         if (mode === 'all') {
             this._currentLimit = filtered.length;
         }
 
-        // Очищення старих рядків
         if (mode === 'reset' || mode === 'refresh' || mode === 'all') {
             this._availRows.forEach(row => this._availGroup.remove(row));
             this._availRows = [];
@@ -212,7 +325,6 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
             this._availRows.push(row);
         });
 
-        // Пагінація: Кнопки "Завантажити ще" та "Завантажити все"
         if (filtered.length > this._currentLimit) {
             const remaining = filtered.length - this._currentLimit;
             const toLoad = Math.min(50, remaining);
@@ -222,11 +334,7 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
                 subtitle: _('You can load more or show the full list at once.')
             });
             
-            const btnBox = new Gtk.Box({ 
-                orientation: Gtk.Orientation.HORIZONTAL, 
-                spacing: 6,
-                valign: Gtk.Align.CENTER 
-            });
+            const btnBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6, valign: Gtk.Align.CENTER });
 
             const btnLoadMore = new Gtk.Button({ label: _('Load More') });
             btnLoadMore.connect('clicked', () => {
@@ -248,7 +356,6 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
             this._availRows.push(moreRow);
         }
 
-        // Відновлення скролу для режимів довантаження
         if (mode !== 'reset' && mode !== 'all' && this._adjustment) {
             GLib.idle_add(GLib.PRIORITY_LOW, () => {
                 if (this._adjustment) this._adjustment.set_value(currentScrollPos);

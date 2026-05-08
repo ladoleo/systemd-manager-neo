@@ -97,3 +97,51 @@ msgstr "Alle laden"
 
 msgid "You can load more or show the full list at once."
 msgstr "Sie können weitere laden oder die vollständige Liste auf einmal anzeigen."
+
+msgid "Services"
+msgstr "Dienste"
+
+msgid "Groups"
+msgstr "Gruppen"
+
+msgid "Service Groups"
+msgstr "Dienstgruppen"
+
+msgid "Create groups to manage multiple services at once."
+msgstr "Erstellen Sie Gruppen, um mehrere Dienste gleichzeitig zu verwalten."
+
+msgid "New group name..."
+msgstr "Neuer Gruppenname..."
+
+msgid "Add Group"
+msgstr "Gruppe hinzufügen"
+
+msgid "%d services attached"
+msgstr "%d Dienste hinzugefügt"
+
+msgid "No favorite services to add. Go to Services tab first."
+msgstr "Keine Favoriten zum Hinzufügen vorhanden. Gehen Sie zuerst zum Tab 'Dienste'."
+
+msgid "Remove this group"
+msgstr "Diese Gruppe entfernen"
+
+msgid "Delete"
+msgstr "Löschen"
+
+msgid "Start All"
+msgstr "Alle starten"
+
+msgid "Stop All"
+msgstr "Alle stoppen"
+
+msgid "Starting group: %s"
+msgstr "Starte Gruppe: %s"
+
+msgid "Group started: %s (%d/%d)"
+msgstr "Gruppe gestartet: %s (%d/%d)"
+
+msgid "Stopping group: %s"
+msgstr "Stoppe Gruppe: %s"
+
+msgid "Group stopped: %s (%d/%d)"
+msgstr "Gruppe gestoppt: %s (%d/%d)"
