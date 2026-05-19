@@ -41,6 +41,12 @@ msgstr "Gestartet: %s"
 msgid "Stopped: %s"
 msgstr "Gestoppt: %s"
 
+msgid "Starting: %s"
+msgstr "Starte: %s"
+
+msgid "Error starting: %s"
+msgstr "Fehler beim Starten: %s"
+
 msgid "Error: Access denied or cancelled"
 msgstr "Fehler: Zugriff verweigert oder abgebrochen"
 
@@ -101,6 +107,9 @@ msgstr "Sie können weitere laden oder die vollständige Liste auf einmal anzeig
 msgid "Services"
 msgstr "Dienste"
 
+msgid "Timers"
+msgstr "Timer"
+
 msgid "Groups"
 msgstr "Gruppen"
 
@@ -119,8 +128,14 @@ msgstr "Gruppe hinzufügen"
 msgid "%d services attached"
 msgstr "%d Dienste hinzugefügt"
 
+msgid "%d attached"
+msgstr "%d hinzugefügt"
+
 msgid "No favorite services to add. Go to Services tab first."
 msgstr "Keine Favoriten zum Hinzufügen vorhanden. Gehen Sie zuerst zum Tab 'Dienste'."
+
+msgid "No compatible favorites available."
+msgstr "Keine kompatiblen Favoriten verfügbar."
 
 msgid "Remove this group"
 msgstr "Diese Gruppe entfernen"
@@ -145,3 +160,24 @@ msgstr "Stoppe Gruppe: %s"
 
 msgid "Group stopped: %s (%d/%d)"
 msgstr "Gruppe gestoppt: %s (%d/%d)"
+
+msgid "Next run:"
+msgstr "Nächste Ausführung:"
+
+msgid "Timer is active"
+msgstr "Timer ist aktiv"
+
+msgid "Timer stopped"
+msgstr "Timer gestoppt"
+
+msgid "Stopping timer: %s"
+msgstr "Stoppe Timer: %s"
+
+msgid "Starting timer: %s"
+msgstr "Starte Timer: %s"
+
+msgid "Timer stopped: %s"
+msgstr "Timer gestoppt: %s"
+
+msgid "Timer started: %s"
+msgstr "Timer gestartet: %s"

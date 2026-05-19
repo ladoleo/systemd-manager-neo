@@ -36,44 +36,55 @@ function formatBytes(bytes) {
 }
 
 export async function getLoadedServices() {
-    let services = [];
+    const units = [];
     
-    const processUnits = (res, bus) => {
-        if (!res) return;
-        res.recursiveUnpack()[0].forEach(u => {
-            if (u[0].endsWith('.service')) {
-                services.push({ 
-                    name: u[0], 
-                    activeState: u[3],
-                    subState: u[4],
-                    objectPath: u[6], // Шлях до об'єкта для отримання статистики
-                    busType: bus
+    try {
+        const resSys = await getSysConn().call('org.freedesktop.systemd1', '/org/freedesktop/systemd1', 'org.freedesktop.systemd1.Manager', 'ListUnits', null, null, Gio.DBusCallFlags.NONE, -1, null);
+        const unitsSys = resSys.recursiveUnpack()[0];
+        unitsSys.forEach(unit => {
+            const name = unit[0];
+            if (name.endsWith('.service') || name.endsWith('.timer')) {
+                units.push({
+                    name: name,
+                    description: unit[1],
+                    loadState: unit[2],
+                    activeState: unit[3],
+                    subState: unit[4],
+                    objectPath: unit[6],
+                    busType: 'system'
                 });
             }
         });
-    };
+    } catch(e) { console.error('[Systemd Manager Neo] System DBus Error:', e); }
 
     try {
-        const sysRes = await getSysConn().call('org.freedesktop.systemd1', '/org/freedesktop/systemd1', 'org.freedesktop.systemd1.Manager', 'ListUnits', null, null, Gio.DBusCallFlags.NONE, -1, null);
-        processUnits(sysRes, 'system');
-    } catch (e) {}
+        const resUsr = await getUsrConn().call('org.freedesktop.systemd1', '/org/freedesktop/systemd1', 'org.freedesktop.systemd1.Manager', 'ListUnits', null, null, Gio.DBusCallFlags.NONE, -1, null);
+        const unitsUsr = resUsr.recursiveUnpack()[0];
+        unitsUsr.forEach(unit => {
+            const name = unit[0];
+            if (name.endsWith('.service') || name.endsWith('.timer')) {
+                units.push({
+                    name: name,
+                    description: unit[1],
+                    loadState: unit[2],
+                    activeState: unit[3],
+                    subState: unit[4],
+                    objectPath: unit[6],
+                    busType: 'user'
+                });
+            }
+        });
+    } catch(e) { console.error('[Systemd Manager Neo] User DBus Error:', e); }
 
-    try {
-        const usrRes = await getUsrConn().call('org.freedesktop.systemd1', '/org/freedesktop/systemd1', 'org.freedesktop.systemd1.Manager', 'ListUnits', null, null, Gio.DBusCallFlags.NONE, -1, null);
-        processUnits(usrRes, 'session');
-    } catch (e) {}
-
-    return services;
+    return units;
 }
 
-// Нова функція отримання статистики
 export async function getServiceStats(objectPath, busType) {
     const conn = busType === 'system' ? getSysConn() : getUsrConn();
     let uptimeStr = 'N/A';
     let ramStr = 'N/A';
 
     try {
-        // Отримуємо час старту
         const timeRes = await conn.call('org.freedesktop.systemd1', objectPath, 'org.freedesktop.DBus.Properties', 'Get', new GLib.Variant('(ss)', ['org.freedesktop.systemd1.Unit', 'ActiveEnterTimestamp']), null, Gio.DBusCallFlags.NONE, -1, null);
         const timeMicros = timeRes.recursiveUnpack()[0];
         if (timeMicros > 0) {
@@ -83,10 +94,8 @@ export async function getServiceStats(objectPath, busType) {
     } catch(e) {}
 
     try {
-        // Отримуємо споживання RAM
         const memRes = await conn.call('org.freedesktop.systemd1', objectPath, 'org.freedesktop.DBus.Properties', 'Get', new GLib.Variant('(ss)', ['org.freedesktop.systemd1.Service', 'MemoryCurrent']), null, Gio.DBusCallFlags.NONE, -1, null);
         const memVal = memRes.recursiveUnpack()[0];
-        // Якщо моніторинг пам'яті вимкнено, systemd повертає гігантське число (MaxUint64)
         if (memVal > 0 && memVal < Number.MAX_SAFE_INTEGER) {
             ramStr = formatBytes(memVal);
         }
@@ -108,6 +117,29 @@ async function executeAction(unitName, action) {
             return false;
         }
     }
+}
+
+export async function getTimerNextRun(objectPath, busType) {
+    try {
+        const conn = busType === 'system' ? getSysConn() : getUsrConn();
+        const res = await conn.call(
+            'org.freedesktop.systemd1', 
+            objectPath, 
+            'org.freedesktop.DBus.Properties', 
+            'Get', 
+            new GLib.Variant('(ss)', ['org.freedesktop.systemd1.Timer', 'NextElapseUSecRealtime']), 
+            null, 
+            Gio.DBusCallFlags.NONE, 
+            -1, 
+            null
+        );
+        const usec = res.recursiveUnpack()[0];
+        if (usec > 0) {
+            const date = new Date(usec / 1000);
+            return date.toLocaleString();
+        }
+    } catch(e) {}
+    return 'N/A';
 }
 
 export async function startService(unitName) { return await executeAction(unitName, 'StartUnit'); }

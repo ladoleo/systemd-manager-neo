@@ -41,6 +41,12 @@ msgstr "Uruchomiono: %s"
 msgid "Stopped: %s"
 msgstr "Zatrzymano: %s"
 
+msgid "Starting: %s"
+msgstr "Uruchamianie: %s"
+
+msgid "Error starting: %s"
+msgstr "Błąd uruchamiania: %s"
+
 msgid "Error: Access denied or cancelled"
 msgstr "Błąd: Odmowa dostępu lub anulowano"
 
@@ -69,7 +75,7 @@ msgid "Search services..."
 msgstr "Szukaj usług..."
 
 msgid "No favorites added yet."
-msgstr "Nie dodano jeszcze ulubionych."
+msgstr "Nie dodano jeszcze żadnych ulubionych."
 
 msgid "...and %d more"
 msgstr "...i %d więcej"
@@ -101,6 +107,9 @@ msgstr "Możesz wczytać więcej lub wyświetlić całą listę naraz."
 msgid "Services"
 msgstr "Usługi"
 
+msgid "Timers"
+msgstr "Timery"
+
 msgid "Groups"
 msgstr "Grupy"
 
@@ -119,8 +128,14 @@ msgstr "Dodaj grupę"
 msgid "%d services attached"
 msgstr "Dołączono %d usług"
 
+msgid "%d attached"
+msgstr "Dołączono %d"
+
 msgid "No favorite services to add. Go to Services tab first."
 msgstr "Brak ulubionych usług do dodania. Przejdź najpierw do zakładki Usługi."
+
+msgid "No compatible favorites available."
+msgstr "Brak dostępnych kompatybilnych ulubionych."
 
 msgid "Remove this group"
 msgstr "Usuń tę grupę"
@@ -145,3 +160,24 @@ msgstr "Zatrzymywanie grupy: %s"
 
 msgid "Group stopped: %s (%d/%d)"
 msgstr "Zatrzymano grupę: %s (%d/%d)"
+
+msgid "Next run:"
+msgstr "Następne uruchomienie:"
+
+msgid "Timer is active"
+msgstr "Timer jest aktywny"
+
+msgid "Timer stopped"
+msgstr "Timer zatrzymany"
+
+msgid "Stopping timer: %s"
+msgstr "Zatrzymywanie timera: %s"
+
+msgid "Starting timer: %s"
+msgstr "Uruchamianie timera: %s"
+
+msgid "Timer stopped: %s"
+msgstr "Timer zatrzymany: %s"
+
+msgid "Timer started: %s"
+msgstr "Timer uruchomiony: %s"

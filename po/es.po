@@ -41,6 +41,12 @@ msgstr "Iniciado: %s"
 msgid "Stopped: %s"
 msgstr "Detenido: %s"
 
+msgid "Starting: %s"
+msgstr "Iniciando: %s"
+
+msgid "Error starting: %s"
+msgstr "Error al iniciar: %s"
+
 msgid "Error: Access denied or cancelled"
 msgstr "Error: Acceso denegado o cancelado"
 
@@ -101,6 +107,9 @@ msgstr "Puede cargar más o mostrar la lista completa a la vez."
 msgid "Services"
 msgstr "Servicios"
 
+msgid "Timers"
+msgstr "Temporizadores"
+
 msgid "Groups"
 msgstr "Grupos"
 
@@ -119,8 +128,14 @@ msgstr "Añadir grupo"
 msgid "%d services attached"
 msgstr "%d servicios adjuntos"
 
+msgid "%d attached"
+msgstr "%d adjuntos"
+
 msgid "No favorite services to add. Go to Services tab first."
 msgstr "No hay servicios favoritos para añadir. Vaya primero a la pestaña Servicios."
+
+msgid "No compatible favorites available."
+msgstr "No hay favoritos compatibles disponibles."
 
 msgid "Remove this group"
 msgstr "Eliminar este grupo"
@@ -145,3 +160,24 @@ msgstr "Deteniendo grupo: %s"
 
 msgid "Group stopped: %s (%d/%d)"
 msgstr "Grupo detenido: %s (%d/%d)"
+
+msgid "Next run:"
+msgstr "Próxima ejecución:"
+
+msgid "Timer is active"
+msgstr "Temporizador activo"
+
+msgid "Timer stopped"
+msgstr "Temporizador detenido"
+
+msgid "Stopping timer: %s"
+msgstr "Deteniendo temporizador: %s"
+
+msgid "Starting timer: %s"
+msgstr "Iniciando temporizador: %s"
+
+msgid "Timer stopped: %s"
+msgstr "Temporizador detenido: %s"
+
+msgid "Timer started: %s"
+msgstr "Temporizador iniciado: %s"

@@ -41,14 +41,20 @@ msgstr "Запущено: %s"
 msgid "Stopped: %s"
 msgstr "Зупинено: %s"
 
+msgid "Starting: %s"
+msgstr "Запуск: %s"
+
+msgid "Error starting: %s"
+msgstr "Помилка запуску: %s"
+
 msgid "Error: Access denied or cancelled"
 msgstr "Помилка: Відмовлено в доступі або скасовано"
 
 msgid "System"
-msgstr "Система"
+msgstr "Системні"
 
 msgid "User"
-msgstr "Користувач"
+msgstr "Користувацькі"
 
 msgid "State"
 msgstr "Стан"
@@ -66,7 +72,7 @@ msgid "Search and add services to your favorites."
 msgstr "Шукайте та додавайте сервіси до обраних."
 
 msgid "Search services..."
-msgstr "Шукати сервіси..."
+msgstr "Пошук сервісів..."
 
 msgid "No favorites added yet."
 msgstr "Ще не додано жодного сервісу."
@@ -78,7 +84,7 @@ msgid "Use search to find specific services."
 msgstr "Використовуйте пошук, щоб знайти потрібні сервіси."
 
 msgid "All"
-msgstr "Всі"
+msgstr "Усі"
 
 msgid "Enabled"
 msgstr "Увімкнені"
@@ -101,6 +107,9 @@ msgstr "Ви можете довантажити ще або показати в
 msgid "Services"
 msgstr "Сервіси"
 
+msgid "Timers"
+msgstr "Таймери"
+
 msgid "Groups"
 msgstr "Групи"
 
@@ -119,8 +128,14 @@ msgstr "Додати групу"
 msgid "%d services attached"
 msgstr "%d сервісів додано"
 
+msgid "%d attached"
+msgstr "%d додано"
+
 msgid "No favorite services to add. Go to Services tab first."
 msgstr "Немає обраних сервісів. Спершу додайте їх на вкладці Сервіси."
+
+msgid "No compatible favorites available."
+msgstr "Немає сумісних обраних сервісів."
 
 msgid "Remove this group"
 msgstr "Видалити цю групу"
@@ -145,3 +160,24 @@ msgstr "Зупинка групи: %s"
 
 msgid "Group stopped: %s (%d/%d)"
 msgstr "Групу зупинено: %s (%d/%d)"
+
+msgid "Next run:"
+msgstr "Наступний запуск:"
+
+msgid "Timer is active"
+msgstr "Таймер активний"
+
+msgid "Timer stopped"
+msgstr "Таймер зупинено"
+
+msgid "Stopping timer: %s"
+msgstr "Зупинка таймера: %s"
+
+msgid "Starting timer: %s"
+msgstr "Запуск таймера: %s"
+
+msgid "Timer stopped: %s"
+msgstr "Таймер зупинено: %s"
+
+msgid "Timer started: %s"
+msgstr "Таймер запущено: %s"

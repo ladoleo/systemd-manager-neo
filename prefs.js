@@ -1,6 +1,11 @@
 /*
  * Systemd Manager Neo
  * Copyright (C) 2026 Lado Leo
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
  */
 
 import Adw from 'gi://Adw';
@@ -15,7 +20,16 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
         this._allServices = [];
         this._favRows = [];
         this._availRows = [];
-        this._groupRows = []; // Для збереження віджетів груп
+        this._groupRows = [];
+
+        // --- НОВИЙ КОД: Задаємо розмір вікна налаштувань ---
+        // Задаємо бажаний початковий розмір (ширина, висота)
+        window.set_default_size(865, 700);
+        // Задаємо мінімальний розмір, щоб вікно не можна було стиснути занадто сильно
+        window.set_size_request(450, 400);
+        // Додатково можна зробити так, щоб вікно відкривалося по центру екрана (опціонально)
+        window.set_modal(true);
+        // --- КІНЕЦЬ НОВОГО КОДУ ---
 
         // --- ВКЛАДКА 1: СЕРВІСИ ---
         const pageServices = new Adw.PreferencesPage({
@@ -55,11 +69,23 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
 
         this._filterBus = 'all';
         this._filterState = 'all';
+        this._filterType = 'all'; // НОВИЙ ФІЛЬТР ДЛЯ ТАЙМЕРІВ
         this._currentLimit = 50;
 
         const filterBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 12, margin_bottom: 12, halign: Gtk.Align.CENTER });
         searchGroup.add(filterBox);
 
+        // Фільтр Типу (Усі / Сервіси / Таймери)
+        const typeGroup = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL });
+        typeGroup.add_css_class('linked');
+        const btnTypeAll = new Gtk.ToggleButton({ label: _('All') });
+        const btnTypeSvc = new Gtk.ToggleButton({ label: _('Services') });
+        const btnTypeTmr = new Gtk.ToggleButton({ label: _('Timers') });
+        btnTypeSvc.set_group(btnTypeAll); btnTypeTmr.set_group(btnTypeAll); btnTypeAll.set_active(true);
+        typeGroup.append(btnTypeAll); typeGroup.append(btnTypeSvc); typeGroup.append(btnTypeTmr);
+        filterBox.append(typeGroup);
+
+        // Фільтр Bus
         const busGroup = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL });
         busGroup.add_css_class('linked');
         const btnBusAll = new Gtk.ToggleButton({ label: _('All') });
@@ -69,6 +95,7 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
         busGroup.append(btnBusAll); busGroup.append(btnBusSys); busGroup.append(btnBusUsr);
         filterBox.append(busGroup);
 
+        // Фільтр Стану
         const stateGroup = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL });
         stateGroup.add_css_class('linked');
         const btnStateAll = new Gtk.ToggleButton({ label: _('All') });
@@ -79,16 +106,22 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
         filterBox.append(stateGroup);
 
         const updateFilters = () => {
+            if (btnTypeAll.get_active()) this._filterType = 'all';
+            else if (btnTypeSvc.get_active()) this._filterType = 'service';
+            else if (btnTypeTmr.get_active()) this._filterType = 'timer';
+
             if (btnBusAll.get_active()) this._filterBus = 'all';
             else if (btnBusSys.get_active()) this._filterBus = 'system';
             else if (btnBusUsr.get_active()) this._filterBus = 'user';
+
             if (btnStateAll.get_active()) this._filterState = 'all';
             else if (btnStateEn.get_active()) this._filterState = 'enabled';
             else if (btnStateDis.get_active()) this._filterState = 'disabled';
+            
             this._updateAvailableList('reset'); 
         };
 
-        [btnBusAll, btnBusSys, btnBusUsr, btnStateAll, btnStateEn, btnStateDis].forEach(btn => btn.connect('toggled', updateFilters));
+        [btnTypeAll, btnTypeSvc, btnTypeTmr, btnBusAll, btnBusSys, btnBusUsr, btnStateAll, btnStateEn, btnStateDis].forEach(btn => btn.connect('toggled', updateFilters));
 
         this._availGroup = new Adw.PreferencesGroup();
         pageServices.add(this._availGroup);
@@ -96,7 +129,7 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
         // --- ВКЛАДКА 2: ГРУПИ (ПРОФІЛІ) ---
         const pageGroups = new Adw.PreferencesPage({
             title: _('Groups'),
-            icon_name: 'folder-system-symbolic'
+            icon_name: 'org.gnome.Settings-applications-symbolic'
         });
         window.add(pageGroups);
 
@@ -106,12 +139,18 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
         });
         pageGroups.add(createGroupPref);
 
-        // Поле для створення нової групи
+        // Поле для створення нової групи з вибором типу
         const addGroupBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 12, margin_bottom: 24 });
         const addGroupEntry = new Gtk.Entry({ placeholder_text: _('New group name...'), hexpand: true });
+        
+        const addGroupType = Gtk.DropDown.new_from_strings([_('Services'), _('Timers')]);
+        addGroupType.valign = Gtk.Align.CENTER;
+        
         const addGroupBtn = new Gtk.Button({ label: _('Add Group'), valign: Gtk.Align.CENTER });
         addGroupBtn.add_css_class('suggested-action');
+        
         addGroupBox.append(addGroupEntry);
+        addGroupBox.append(addGroupType);
         addGroupBox.append(addGroupBtn);
         createGroupPref.add(addGroupBox);
 
@@ -123,14 +162,15 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
             if (name) {
                 let groups = this._getGroups();
                 if (!groups[name]) {
-                    groups[name] = []; // Створюємо пусту групу
+                    const isTimer = addGroupType.get_selected() === 1;
+                    // НОВИЙ ФОРМАТ: зберігаємо тип групи
+                    groups[name] = { type: isTimer ? 'timer' : 'service', services: [] };
                     this._saveGroups(groups);
                     addGroupEntry.set_text('');
                     this._refreshGroupsUI();
                 }
             }
         });
-
 
         // --- ІНІЦІАЛІЗАЦІЯ ---
         this._loadServices();
@@ -150,11 +190,20 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
         });
     }
 
-    // --- ЛОГІКА РОБОТИ З JSON ---
     _getGroups() {
         try {
             const jsonStr = this._settings.get_string('service-groups');
-            return jsonStr ? JSON.parse(jsonStr) : {};
+            const raw = jsonStr ? JSON.parse(jsonStr) : {};
+            const groups = {};
+            // МІГРАЦІЯ: переводимо старі масиви у новий формат з типом
+            for (const [k, v] of Object.entries(raw)) {
+                if (Array.isArray(v)) {
+                    groups[k] = { type: 'service', services: v };
+                } else {
+                    groups[k] = v;
+                }
+            }
+            return groups;
         } catch (e) {
             console.error('[Systemd Manager Neo] Error parsing groups JSON:', e);
             return {};
@@ -165,7 +214,6 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
         this._settings.set_string('service-groups', JSON.stringify(groups));
     }
 
-    // --- РЕНДЕР ГРУП ---
     _refreshGroupsUI() {
         if (!this._groupsList) return;
 
@@ -175,18 +223,31 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
         const groups = this._getGroups();
         const favs = this._settings.get_strv('favorite-services') || [];
 
-        for (const [groupName, groupServices] of Object.entries(groups)) {
+        for (const [groupName, groupData] of Object.entries(groups)) {
+            const groupType = groupData.type;
+            const groupServices = groupData.services;
+            
             const expander = new Adw.ExpanderRow({ 
                 title: groupName, 
-                subtitle: _('%d services attached').replace('%d', groupServices.length) 
+                subtitle: _('%d attached').replace('%d', groupServices.length) 
             });
 
-            // Додаємо всі "Обрані" сервіси як перемикачі (Switch) всередину групи
-            if (favs.length === 0) {
-                const emptyRow = new Adw.ActionRow({ title: _('No favorite services to add. Go to Services tab first.') });
+            // Нативний метод libadwaita для іконок у рядках
+            if (groupType === 'timer') {
+                expander.set_icon_name('weather-hourly-symbolic');
+            }
+
+            // Відфільтровуємо лише ті обрані, які підходять під тип групи
+            const matchingFavs = favs.filter(fav => {
+                if (groupType === 'timer') return fav.endsWith('.timer');
+                return fav.endsWith('.service');
+            });
+
+            if (matchingFavs.length === 0) {
+                const emptyRow = new Adw.ActionRow({ title: _('No compatible favorites available.') });
                 expander.add_row(emptyRow);
             } else {
-                favs.forEach(favName => {
+                matchingFavs.forEach(favName => {
                     const row = new Adw.ActionRow({ title: favName });
                     const sw = new Gtk.Switch({ valign: Gtk.Align.CENTER });
                     
@@ -195,12 +256,12 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
                     sw.connect('notify::active', () => {
                         let g = this._getGroups();
                         if (sw.get_active()) {
-                            if (!g[groupName].includes(favName)) g[groupName].push(favName);
+                            if (!g[groupName].services.includes(favName)) g[groupName].services.push(favName);
                         } else {
-                            g[groupName] = g[groupName].filter(s => s !== favName);
+                            g[groupName].services = g[groupName].services.filter(s => s !== favName);
                         }
                         this._saveGroups(g);
-                        expander.set_subtitle(_('%d services attached').replace('%d', g[groupName].length));
+                        expander.set_subtitle(_('%d attached').replace('%d', g[groupName].services.length));
                     });
                     
                     row.add_suffix(sw);
@@ -208,7 +269,6 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
                 });
             }
 
-            // Кнопка видалення групи (у самому низу списку)
             const deleteRow = new Adw.ActionRow({ title: _('Remove this group') });
             const btnDelete = new Gtk.Button({ label: _('Delete'), valign: Gtk.Align.CENTER });
             btnDelete.add_css_class('destructive-action');
@@ -226,7 +286,6 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
         }
     }
 
-
     _loadServices() {
         this._allServices = []; 
         try {
@@ -238,7 +297,8 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
                     const files = result.recursiveUnpack()[0];
                     files.forEach(f => {
                         const name = f[0].split('/').pop();
-                        if (name.endsWith('.service')) {
+                        // ТЕПЕР ЗЧИТУЄМО ТАКОЖ І .TIMER ФАЙЛИ
+                        if (name.endsWith('.service') || name.endsWith('.timer')) {
                             this._allServices.push({ name, bus: busType, state: f[1] });
                         }
                     });
@@ -277,8 +337,6 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
             });
         }
         this._updateAvailableList('refresh');
-        
-        // Оновлюємо також і вкладку груп, бо список обраних міг змінитись
         this._refreshGroupsUI(); 
     }
 
@@ -293,6 +351,11 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
         let filtered = this._allServices.filter(item => {
             if (favs.includes(item.name)) return false;
             if (!item.name.toLowerCase().includes(searchText)) return false;
+            
+            // ЛОГІКА НОВОГО ФІЛЬТРА ТИПІВ
+            if (this._filterType === 'service' && !item.name.endsWith('.service')) return false;
+            if (this._filterType === 'timer' && !item.name.endsWith('.timer')) return false;
+            
             if (this._filterBus !== 'all' && item.bus !== this._filterBus) return false;
             if (this._filterState !== 'all' && item.state !== this._filterState) return false;
             return true;

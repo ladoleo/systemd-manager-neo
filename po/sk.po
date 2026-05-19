@@ -42,6 +42,12 @@ msgstr "Spustené: %s"
 msgid "Stopped: %s"
 msgstr "Zastavené: %s"
 
+msgid "Starting: %s"
+msgstr "Spúšťa sa: %s"
+
+msgid "Error starting: %s"
+msgstr "Chyba pri spúšťaní: %s"
+
 msgid "Error: Access denied or cancelled"
 msgstr "Chyba: Prístup odmietnutý alebo zrušený"
 
@@ -102,6 +108,9 @@ msgstr "Môžete načítať ďalšie alebo zobraziť celý zoznam naraz."
 msgid "Services"
 msgstr "Služby"
 
+msgid "Timers"
+msgstr "Časovače"
+
 msgid "Groups"
 msgstr "Skupiny"
 
@@ -120,8 +129,14 @@ msgstr "Pridať skupinu"
 msgid "%d services attached"
 msgstr "Pripojených %d služieb"
 
+msgid "%d attached"
+msgstr "Pripojených %d"
+
 msgid "No favorite services to add. Go to Services tab first."
 msgstr "Žiadne obľúbené služby na pridanie. Prejdite najskôr na kartu Služby."
+
+msgid "No compatible favorites available."
+msgstr "Nie sú k dispozícii žiadne kompatibilné obľúbené služby."
 
 msgid "Remove this group"
 msgstr "Odstrániť túto skupinu"
@@ -146,3 +161,24 @@ msgstr "Zastavuje sa skupina: %s"
 
 msgid "Group stopped: %s (%d/%d)"
 msgstr "Skupina zastavená: %s (%d/%d)"
+
+msgid "Next run:"
+msgstr "Ďalšie spustenie:"
+
+msgid "Timer is active"
+msgstr "Časovač je aktívny"
+
+msgid "Timer stopped"
+msgstr "Časovač je zastavený"
+
+msgid "Stopping timer: %s"
+msgstr "Zastavuje sa časovač: %s"
+
+msgid "Starting timer: %s"
+msgstr "Spúšťa sa časovač: %s"
+
+msgid "Timer stopped: %s"
+msgstr "Časovač zastavený: %s"
+
+msgid "Timer started: %s"
+msgstr "Časovač spustený: %s"
