@@ -22,7 +22,7 @@
 | :---: | :---: |
 | ![Main Menu](screenshots/screenshot_1.png) | ![Dev Stack](screenshots/screenshot_2.png) |
 
-| Preferences: Advanced Filters | Preferences: Creating Typed Groups |
+| Control of timers | Preferences: Creating Typed Groups |
 | :---: | :---: |
 | ![Timers Services](screenshots/screenshot_3.png) | ![Settings Groups](screenshots/screenshot_4.png) |
 
