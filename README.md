@@ -42,7 +42,7 @@ Setting up groups is designed to keep your panel clean and highly organized. Fol
 
 ## 🌍 Supported Languages
 
-Thanks to our amazing community, the extension speaks 6 languages natively right out of the box:
+The extension speaks 6 languages natively right out of the box:
 🇬🇧 **English** | 🇺🇦 **Ukrainian** | 🇵🇱 **Polish** | 🇪🇸 **Spanish** | 🇸🇰 **Slovak** | 🇩🇪 **German**
 
 ## 🚀 Installation
