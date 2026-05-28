@@ -129,7 +129,7 @@ class Indicator extends PanelMenu.Button {
         const buildServiceMenuItem = (data) => {
             const item = new PopupMenu.PopupBaseMenuItem({ activate: false });
 
-            // 1. БЛОК ТЕКСТУ (Завжди зліва)
+            // 1. TEXT BLOCK (Always on the left)
             const labelBox = new St.BoxLayout({ vertical: true, x_expand: true });
             labelBox.set_style('margin-left: 8px;');
             
@@ -146,7 +146,7 @@ class Indicator extends PanelMenu.Button {
             }
             item.add_child(labelBox);
 
-            // 2. БЛОК КНОПОК КЕРУВАННЯ (Справа)
+            // 2. CONTROL BUTTON BLOCK (Right)
             const btnBox = new St.BoxLayout({
                 vertical: false,
                 style: 'margin-right: 14px; margin-left: 8px;' 
@@ -275,7 +275,7 @@ class Indicator extends PanelMenu.Button {
 
             const subMenu = new PopupMenu.PopupSubMenuMenuItem(groupName);
 
-            // ДОДАЄМО СИМВОЛЬНУ ІКОНКУ ТАЙМЕРА (замість емодзі)
+            
             if (groupType === 'timer') {
                 const groupTimerIcon = new St.Icon({
                     icon_name: 'weather-hourly-symbolic',
@@ -296,11 +296,11 @@ class Indicator extends PanelMenu.Button {
                     icon_size: 16,
                     style: 'color: #ed333b; margin-left: 6px;'
                 });
-                // Вставляємо іконку помилки після іконки таймера (на індекс 3), якщо вона є
+                // Insert the error icon after the timer icon (at index 3), if there is one
                 subMenu.insert_child_at_index(groupErrorIcon, groupType === 'timer' ? 3 : 2);
             }
 
-            // МАCОВИЙ ЗАПУСК - Додаємо ТІЛЬКИ якщо це група звичайних сервісів
+            // MASS LAUNCH - Add ONLY if this is a group of regular services
             if (groupType !== 'timer') {
                 const startAllItem = new PopupMenu.PopupImageMenuItem(_('Start All'), 'media-playback-start-symbolic');
                 startAllItem.connect('activate', async () => {
