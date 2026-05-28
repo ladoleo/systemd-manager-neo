@@ -52,7 +52,7 @@ class Indicator extends PanelMenu.Button {
         try {
             const jsonStr = this._settings.get_string('service-groups');
             const raw = jsonStr ? JSON.parse(jsonStr) : {};
-            // Обробка міграції на льоту
+            // Handle dynamic migration for older service group formats
             for (const [k, v] of Object.entries(raw)) {
                 if (Array.isArray(v)) {
                     groups[k] = { type: 'service', services: v };

@@ -14,7 +14,7 @@ import GLib from 'gi://GLib';
 function getSysConn() { return Gio.bus_get_sync(Gio.BusType.SYSTEM, null); }
 function getUsrConn() { return Gio.bus_get_sync(Gio.BusType.SESSION, null); }
 
-// Допоміжні функції форматування
+// Helper formatting functions for UI display
 function formatUptime(ms) {
     const totalSec = Math.floor(ms / 1000);
     const d = Math.floor(totalSec / 86400);

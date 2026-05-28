@@ -22,16 +22,12 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
         this._availRows = [];
         this._groupRows = [];
 
-        // --- НОВИЙ КОД: Задаємо розмір вікна налаштувань ---
-        // Задаємо бажаний початковий розмір (ширина, висота)
+        // Set default preferences window size and constraints
         window.set_default_size(865, 700);
-        // Задаємо мінімальний розмір, щоб вікно не можна було стиснути занадто сильно
         window.set_size_request(450, 400);
-        // Додатково можна зробити так, щоб вікно відкривалося по центру екрана (опціонально)
         window.set_modal(true);
-        // --- КІНЕЦЬ НОВОГО КОДУ ---
 
-        // --- ВКЛАДКА 1: СЕРВІСИ ---
+        // --- TAB 1: SERVICES ---
         const pageServices = new Adw.PreferencesPage({
             title: _('Services'),
             icon_name: 'emblem-system-symbolic'
@@ -69,13 +65,13 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
 
         this._filterBus = 'all';
         this._filterState = 'all';
-        this._filterType = 'all'; // НОВИЙ ФІЛЬТР ДЛЯ ТАЙМЕРІВ
+        this._filterType = 'all'; // Default filter type includes everything
         this._currentLimit = 50;
 
         const filterBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 12, margin_bottom: 12, halign: Gtk.Align.CENTER });
         searchGroup.add(filterBox);
 
-        // Фільтр Типу (Усі / Сервіси / Таймери)
+        // Unit Type Filter (All / Services / Timers)
         const typeGroup = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL });
         typeGroup.add_css_class('linked');
         const btnTypeAll = new Gtk.ToggleButton({ label: _('All') });
@@ -85,7 +81,7 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
         typeGroup.append(btnTypeAll); typeGroup.append(btnTypeSvc); typeGroup.append(btnTypeTmr);
         filterBox.append(typeGroup);
 
-        // Фільтр Bus
+        // Bus Type Filter (System / User)
         const busGroup = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL });
         busGroup.add_css_class('linked');
         const btnBusAll = new Gtk.ToggleButton({ label: _('All') });
@@ -95,7 +91,7 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
         busGroup.append(btnBusAll); busGroup.append(btnBusSys); busGroup.append(btnBusUsr);
         filterBox.append(busGroup);
 
-        // Фільтр Стану
+        // Active State Filter
         const stateGroup = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL });
         stateGroup.add_css_class('linked');
         const btnStateAll = new Gtk.ToggleButton({ label: _('All') });
