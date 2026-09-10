@@ -12,21 +12,25 @@ import Adw from 'gi://Adw';
 import Gtk from 'gi://Gtk';
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
+import Gdk from 'gi://Gdk';
 import { ExtensionPreferences, gettext as _ } from 'resource:///org/gnome/Shell/Extensions/js/extensions/prefs.js';
+import * as Systemd from './systemd.js'; // Include our backend
 
 export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
     fillPreferencesWindow(window) {
+        this._window = window; // Store window reference for navigation
         this._settings = this.getSettings();
         this._allServices = [];
         this._favRows = [];
         this._availRows = [];
         this._groupRows = [];
 
-        // Set default preferences window size and constraints
-        window.set_default_size(865, 700);
+        // --- Window Size Configuration ---
+        window.set_default_size(950, 700);
         window.set_size_request(450, 400);
         window.set_modal(true);
 
+        // --- TAB 1: SERVICES ---
         // --- TAB 1: SERVICES ---
         const pageServices = new Adw.PreferencesPage({
             title: _('Services'),
@@ -57,7 +61,7 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
         pageServices.add(searchGroup);
 
         this._searchEntry = new Gtk.SearchEntry({
-            placeholder_text: _('Search services...'),
+            placeholder_text: _('Search...'),
             margin_bottom: 12
         });
         this._searchEntry.connect('search-changed', () => this._updateAvailableList('reset'));
@@ -65,23 +69,32 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
 
         this._filterBus = 'all';
         this._filterState = 'all';
-        this._filterType = 'all'; // Default filter type includes everything
+        this._filterType = 'all'; 
         this._currentLimit = 50;
 
         const filterBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 12, margin_bottom: 12, halign: Gtk.Align.CENTER });
         searchGroup.add(filterBox);
 
-        // Unit Type Filter (All / Services / Timers)
+        // Type Filter (All / Services / Timers / Sockets)
         const typeGroup = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL });
         typeGroup.add_css_class('linked');
         const btnTypeAll = new Gtk.ToggleButton({ label: _('All') });
         const btnTypeSvc = new Gtk.ToggleButton({ label: _('Services') });
         const btnTypeTmr = new Gtk.ToggleButton({ label: _('Timers') });
-        btnTypeSvc.set_group(btnTypeAll); btnTypeTmr.set_group(btnTypeAll); btnTypeAll.set_active(true);
-        typeGroup.append(btnTypeAll); typeGroup.append(btnTypeSvc); typeGroup.append(btnTypeTmr);
+        const btnTypeSck = new Gtk.ToggleButton({ label: _('Sockets') });
+        
+        btnTypeSvc.set_group(btnTypeAll); 
+        btnTypeTmr.set_group(btnTypeAll); 
+        btnTypeSck.set_group(btnTypeAll);
+        btnTypeAll.set_active(true);
+        
+        typeGroup.append(btnTypeAll); 
+        typeGroup.append(btnTypeSvc); 
+        typeGroup.append(btnTypeTmr);
+        typeGroup.append(btnTypeSck);
         filterBox.append(typeGroup);
 
-        // Bus Type Filter (System / User)
+        // Bus Filter
         const busGroup = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL });
         busGroup.add_css_class('linked');
         const btnBusAll = new Gtk.ToggleButton({ label: _('All') });
@@ -91,7 +104,7 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
         busGroup.append(btnBusAll); busGroup.append(btnBusSys); busGroup.append(btnBusUsr);
         filterBox.append(busGroup);
 
-        // Active State Filter
+        // State Filter
         const stateGroup = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL });
         stateGroup.add_css_class('linked');
         const btnStateAll = new Gtk.ToggleButton({ label: _('All') });
@@ -105,6 +118,7 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
             if (btnTypeAll.get_active()) this._filterType = 'all';
             else if (btnTypeSvc.get_active()) this._filterType = 'service';
             else if (btnTypeTmr.get_active()) this._filterType = 'timer';
+            else if (btnTypeSck.get_active()) this._filterType = 'socket';
 
             if (btnBusAll.get_active()) this._filterBus = 'all';
             else if (btnBusSys.get_active()) this._filterBus = 'system';
@@ -117,12 +131,12 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
             this._updateAvailableList('reset'); 
         };
 
-        [btnTypeAll, btnTypeSvc, btnTypeTmr, btnBusAll, btnBusSys, btnBusUsr, btnStateAll, btnStateEn, btnStateDis].forEach(btn => btn.connect('toggled', updateFilters));
+        [btnTypeAll, btnTypeSvc, btnTypeTmr, btnTypeSck, btnBusAll, btnBusSys, btnBusUsr, btnStateAll, btnStateEn, btnStateDis].forEach(btn => btn.connect('toggled', updateFilters));
 
         this._availGroup = new Adw.PreferencesGroup();
         pageServices.add(this._availGroup);
 
-        // --- ВКЛАДКА 2: ГРУПИ (ПРОФІЛІ) ---
+        // --- TAB 2: GROUPS (PROFILES) ---
         const pageGroups = new Adw.PreferencesPage({
             title: _('Groups'),
             icon_name: 'org.gnome.Settings-applications-symbolic'
@@ -135,11 +149,11 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
         });
         pageGroups.add(createGroupPref);
 
-        // Поле для створення нової групи з вибором типу
         const addGroupBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 12, margin_bottom: 24 });
         const addGroupEntry = new Gtk.Entry({ placeholder_text: _('New group name...'), hexpand: true });
         
-        const addGroupType = Gtk.DropDown.new_from_strings([_('Services'), _('Timers')]);
+        const groupTypesMap = ['service', 'timer', 'socket', 'mixed'];
+        const addGroupType = Gtk.DropDown.new_from_strings([_('Services'), _('Timers'), _('Sockets'), _('Mixed')]);
         addGroupType.valign = Gtk.Align.CENTER;
         
         const addGroupBtn = new Gtk.Button({ label: _('Add Group'), valign: Gtk.Align.CENTER });
@@ -158,9 +172,9 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
             if (name) {
                 let groups = this._getGroups();
                 if (!groups[name]) {
-                    const isTimer = addGroupType.get_selected() === 1;
-                    // НОВИЙ ФОРМАТ: зберігаємо тип групи
-                    groups[name] = { type: isTimer ? 'timer' : 'service', services: [] };
+                    const selectedIdx = addGroupType.get_selected();
+                    const groupType = groupTypesMap[selectedIdx] || 'service';
+                    groups[name] = { type: groupType, services: [] };
                     this._saveGroups(groups);
                     addGroupEntry.set_text('');
                     this._refreshGroupsUI();
@@ -168,7 +182,7 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
             }
         });
 
-        // --- ІНІЦІАЛІЗАЦІЯ ---
+        // --- INITIALIZATION ---
         this._loadServices();
         this._refreshUI();
 
@@ -183,7 +197,175 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
             this._groupsList = null;
             this._searchEntry = null;
             this._adjustment = null;
+            this._window = null;
         });
+    }
+
+    // --- NEW METHOD: OPEN UNIT DASHBOARD ---
+    async _showServiceDetails(unitName, busType) {
+        const subpage = new Adw.NavigationPage({ title: unitName, tag: unitName });
+        
+        // Add ToolbarView for the top bar with the "Back" button
+        const toolbarView = new Adw.ToolbarView();
+        const headerBar = new Adw.HeaderBar();
+        toolbarView.add_top_bar(headerBar);
+
+        const prefPage = new Adw.PreferencesPage();
+        toolbarView.set_content(prefPage);
+        subpage.set_child(toolbarView);
+
+        // UI Elements (values will be populated dynamically)
+        const rowActiveState = new Adw.ActionRow({ title: _('Active State'), subtitle: '...' });
+        const rowSubState = new Adw.ActionRow({ title: _('Sub State'), subtitle: '...' });
+        const rowUptime = new Adw.ActionRow({ title: _('Uptime'), subtitle: '...' });
+        const rowRam = new Adw.ActionRow({ title: _('RAM Usage'), subtitle: '...' });
+        const rowPath = new Adw.ActionRow({ title: _('Path'), subtitle: '...' });
+
+        // 1. Status Information
+        const statusGroup = new Adw.PreferencesGroup({ title: _('Status Information') });
+        prefPage.add(statusGroup);
+        statusGroup.add(rowActiveState);
+        statusGroup.add(rowSubState);
+        statusGroup.add(rowUptime);
+        statusGroup.add(rowRam);
+
+        // Function to refresh on-screen data
+        const refreshData = async () => {
+            const details = await Systemd.getUnitDetails(unitName, busType);
+            rowActiveState.set_subtitle(details.activeState);
+            rowSubState.set_subtitle(details.subState);
+            rowUptime.set_subtitle(details.uptime);
+            rowRam.set_subtitle(details.ram);
+            rowPath.set_subtitle(details.fragmentPath);
+        };
+
+        // 2. Runtime Controls (Start/Stop)
+        const controlGroup = new Adw.PreferencesGroup({ title: _('Runtime Controls') });
+        prefPage.add(controlGroup);
+
+        const ctrlBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 14, margin_top: 10, margin_bottom: 10, halign: Gtk.Align.CENTER });
+        
+        // Using GLib.timeout_add instead of setTimeout, and validating success of DBus commands
+        const btnStart = new Gtk.Button({ label: _('Start'), width_request: 100 });
+        btnStart.add_css_class('suggested-action');
+        btnStart.connect('clicked', async () => { 
+            const success = await Systemd.startService(unitName, busType); 
+            this._window.add_toast(new Adw.Toast({ title: success ? _('Started: %s').replace('%s', unitName) : _('Error: Access denied or cancelled') }));
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1200, () => { refreshData(); return GLib.SOURCE_REMOVE; });
+        });
+
+        const btnStop = new Gtk.Button({ label: _('Stop'), width_request: 100 });
+        btnStop.add_css_class('destructive-action');
+        btnStop.connect('clicked', async () => { 
+            const success = await Systemd.stopService(unitName, busType); 
+            this._window.add_toast(new Adw.Toast({ title: success ? _('Stopped: %s').replace('%s', unitName) : _('Error: Access denied or cancelled') }));
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1200, () => { refreshData(); return GLib.SOURCE_REMOVE; });
+        });
+
+        const btnRestart = new Gtk.Button({ label: _('Restart'), width_request: 100 });
+        btnRestart.connect('clicked', async () => { 
+            const success = await Systemd.restartService(unitName, busType); 
+            this._window.add_toast(new Adw.Toast({ title: success ? _('Restarted: %s').replace('%s', unitName) : _('Error: Access denied or cancelled') }));
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1200, () => { refreshData(); return GLib.SOURCE_REMOVE; });
+        });
+
+        ctrlBox.append(btnStart);
+        ctrlBox.append(btnStop);
+        ctrlBox.append(btnRestart);
+
+        const ctrlRow = new Adw.ActionRow();
+        ctrlRow.set_child(ctrlBox);
+        controlGroup.add(ctrlRow);
+
+        // 3. Startup Controls (Enable/Disable)
+        const startupGroup = new Adw.PreferencesGroup({ title: _('Startup (Boot) Configuration') });
+        prefPage.add(startupGroup);
+
+        const startupBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 14, margin_top: 10, margin_bottom: 10, halign: Gtk.Align.CENTER });
+        
+        const btnEnable = new Gtk.Button({ label: _('Enable (Auto-start)'), width_request: 180 });
+        btnEnable.connect('clicked', async () => { 
+            const success = await Systemd.enableService(unitName, busType); 
+            this._window.add_toast(new Adw.Toast({ title: success ? _('Enabled') : _('Error: Access denied or cancelled') }));
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1200, () => { refreshData(); return GLib.SOURCE_REMOVE; });
+        });
+
+        const btnDisable = new Gtk.Button({ label: _('Disable'), width_request: 180 });
+        btnDisable.connect('clicked', async () => { 
+            const success = await Systemd.disableService(unitName, busType); 
+            this._window.add_toast(new Adw.Toast({ title: success ? _('Disabled') : _('Error: Access denied or cancelled') }));
+            GLib.timeout_add(GLib.PRIORITY_DEFAULT, 1200, () => { refreshData(); return GLib.SOURCE_REMOVE; });
+        });
+
+        startupBox.append(btnEnable);
+        startupBox.append(btnDisable);
+        
+        const startupRow = new Adw.ActionRow();
+        startupRow.set_child(startupBox);
+        startupGroup.add(startupRow);
+
+        // 4. File Information & Logs
+        const infoGroup = new Adw.PreferencesGroup({ title: _('Unit File & Logs') });
+        prefPage.add(infoGroup);
+
+        // Button to open logs in terminal
+        const btnLog = new Gtk.Button({ icon_name: 'utilities-terminal-symbolic', valign: Gtk.Align.CENTER });
+        btnLog.add_css_class('flat');
+        btnLog.connect('clicked', () => {
+            const terminals = [
+                { bin: 'gnome-terminal', arg: '--' }, { bin: 'kgx', arg: '-e' },            
+                { bin: 'ptyxis', arg: '--' }, { bin: 'terminator', arg: '-x' },
+                { bin: 'kitty', arg: '--' }, { bin: 'alacritty', arg: '-e' },
+                { bin: 'konsole', arg: '-e' }, { bin: 'xterm', arg: '-e' }           
+            ];
+            let launched = false;
+            for (let t of terminals) {
+                if (GLib.find_program_in_path(t.bin)) {
+                    const userArg = busType === 'user' ? '--user ' : '';
+                    GLib.spawn_command_line_async(`${t.bin} ${t.arg} journalctl ${userArg}-u ${unitName} -f`);
+                    launched = true;
+                    break;
+                }
+            }
+            if (!launched) this._window.add_toast(new Adw.Toast({ title: _('Terminal emulator not found!') }));
+        });
+
+        // Copy path button configuration
+        const btnCopy = new Gtk.Button({ icon_name: 'edit-copy-symbolic', valign: Gtk.Align.CENTER });
+        btnCopy.add_css_class('flat');
+        btnCopy.connect('clicked', () => {
+            try {
+                const pathText = rowPath.get_subtitle();
+                
+                if (pathText && pathText !== 'N/A' && pathText !== '...') {
+                    const clipboard = btnCopy.get_clipboard(); // Отримуємо буфер безпосередньо від віджета
+                    
+                    // Бронебійний метод GTK4 через байти та ContentProvider (працює завжди)
+                    const bytes = new GLib.Bytes(pathText);
+                    const provider = Gdk.ContentProvider.new_for_bytes('text/plain', bytes);
+                    clipboard.set_content(provider);
+                    
+                    this._window.add_toast(new Adw.Toast({ title: _('Path copied to clipboard!') }));
+                } else {
+                    this._window.add_toast(new Adw.Toast({ title: _('Nothing to copy') }));
+                }
+            } catch (e) {
+                console.error('[Systemd Manager Neo] Error copying to clipboard:', e);
+                this._window.add_toast(new Adw.Toast({ title: `Error: ${e.message}` }));
+            }
+        });
+
+        const pathBox = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6 });
+        pathBox.append(btnLog);
+        pathBox.append(btnCopy);
+        rowPath.add_suffix(pathBox);
+        infoGroup.add(rowPath);
+
+        // Load initial data before displaying the page
+        await refreshData();
+        
+        // Open subpage with a sliding effect
+        this._window.push_subpage(subpage);
     }
 
     _getGroups() {
@@ -191,7 +373,6 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
             const jsonStr = this._settings.get_string('service-groups');
             const raw = jsonStr ? JSON.parse(jsonStr) : {};
             const groups = {};
-            // МІГРАЦІЯ: переводимо старі масиви у новий формат з типом
             for (const [k, v] of Object.entries(raw)) {
                 if (Array.isArray(v)) {
                     groups[k] = { type: 'service', services: v };
@@ -228,14 +409,18 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
                 subtitle: _('%d attached').replace('%d', groupServices.length) 
             });
 
-            // Нативний метод libadwaita для іконок у рядках
             if (groupType === 'timer') {
                 expander.set_icon_name('weather-hourly-symbolic');
+            } else if (groupType === 'socket') {
+                expander.set_icon_name('network-wired-symbolic');
+            } else if (groupType === 'mixed') {
+                expander.set_icon_name('emblem-system-symbolic');
             }
 
-            // Відфільтровуємо лише ті обрані, які підходять під тип групи
             const matchingFavs = favs.filter(fav => {
                 if (groupType === 'timer') return fav.endsWith('.timer');
+                if (groupType === 'socket') return fav.endsWith('.socket');
+                if (groupType === 'mixed') return true;
                 return fav.endsWith('.service');
             });
 
@@ -293,8 +478,7 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
                     const files = result.recursiveUnpack()[0];
                     files.forEach(f => {
                         const name = f[0].split('/').pop();
-                        // ТЕПЕР ЗЧИТУЄМО ТАКОЖ І .TIMER ФАЙЛИ
-                        if (name.endsWith('.service') || name.endsWith('.timer')) {
+                        if (name.endsWith('.service') || name.endsWith('.timer') || name.endsWith('.socket')) {
                             this._allServices.push({ name, bus: busType, state: f[1] });
                         }
                     });
@@ -315,7 +499,13 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
             this._favRows.push(emptyRow);
         } else {
             favs.forEach((name, index) => {
-                const row = new Adw.ActionRow({ title: name });
+                const row = new Adw.ActionRow({ title: name, activatable: true });
+                row.connect('activated', () => {
+                    let svc = this._allServices.find(s => s.name === name);
+                    let bus = svc ? svc.bus : 'system';
+                    this._showServiceDetails(name, bus);
+                });
+
                 const box = new Gtk.Box({ orientation: Gtk.Orientation.HORIZONTAL, spacing: 6, valign: Gtk.Align.CENTER });
                 const btnUp = new Gtk.Button({ icon_name: 'go-up-symbolic' });
                 btnUp.set_sensitive(index > 0);
@@ -348,9 +538,9 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
             if (favs.includes(item.name)) return false;
             if (!item.name.toLowerCase().includes(searchText)) return false;
             
-            // ЛОГІКА НОВОГО ФІЛЬТРА ТИПІВ
             if (this._filterType === 'service' && !item.name.endsWith('.service')) return false;
             if (this._filterType === 'timer' && !item.name.endsWith('.timer')) return false;
+            if (this._filterType === 'socket' && !item.name.endsWith('.socket')) return false;
             
             if (this._filterBus !== 'all' && item.bus !== this._filterBus) return false;
             if (this._filterState !== 'all' && item.state !== this._filterState) return false;
@@ -375,8 +565,11 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
         shown.forEach(item => {
             const row = new Adw.ActionRow({ 
                 title: item.name,
-                subtitle: `${item.bus === 'system' ? _('System') : _('User')} • ${item.state}`
+                subtitle: `${item.bus === 'system' ? _('System') : _('User')} • ${item.state}`,
+                activatable: true 
             });
+            row.connect('activated', () => this._showServiceDetails(item.name, item.bus));
+
             const btnAdd = new Gtk.Button({ icon_name: 'list-add-symbolic', valign: Gtk.Align.CENTER });
             btnAdd.connect('clicked', () => this._toggleFav(item.name, true));
             row.add_suffix(btnAdd);

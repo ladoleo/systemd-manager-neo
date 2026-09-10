@@ -71,8 +71,8 @@ msgstr "Verfügbare Dienste"
 msgid "Search and add services to your favorites."
 msgstr "Suchen und fügen Sie Dienste zu Ihren Favoriten hinzu."
 
-msgid "Search services..."
-msgstr "Dienste suchen..."
+msgid "Search..."
+msgstr "Dienste..."
 
 msgid "No favorites added yet."
 msgstr "Noch keine Favoriten hinzugefügt."
@@ -181,3 +181,75 @@ msgstr "Timer gestoppt: %s"
 
 msgid "Timer started: %s"
 msgstr "Timer gestartet: %s"
+
+msgid "Sockets"
+msgstr "Sockets"
+
+msgid "Mixed"
+msgstr "Gemischt"
+
+msgid "Listening"
+msgstr "Lauscht"
+
+msgid "Status Information"
+msgstr "Statusinformationen"
+
+msgid "Active State"
+msgstr "Aktiver Status"
+
+msgid "Sub State"
+msgstr "Unterstatus"
+
+msgid "Uptime"
+msgstr "Betriebszeit"
+
+msgid "RAM Usage"
+msgstr "RAM-Nutzung"
+
+msgid "Runtime Controls"
+msgstr "Laufzeitsteuerung"
+
+msgid "Start"
+msgstr "Starten"
+
+msgid "Stop"
+msgstr "Stoppen"
+
+msgid "Restart"
+msgstr "Neustarten"
+
+msgid "Start command sent"
+msgstr "Startbefehl gesendet"
+
+msgid "Stop command sent"
+msgstr "Stoppbefehl gesendet"
+
+msgid "Restart command sent"
+msgstr "Neustartbefehl gesendet"
+
+msgid "Startup (Boot) Configuration"
+msgstr "Autostart-Konfiguration"
+
+msgid "Enable (Auto-start)"
+msgstr "Aktivieren (Autostart)"
+
+msgid "Disable"
+msgstr "Deaktivieren"
+
+msgid "Enable command sent"
+msgstr "Aktivierungsbefehl gesendet"
+
+msgid "Disable command sent"
+msgstr "Deaktivierungsbefehl gesendet"
+
+msgid "Unit File & Logs"
+msgstr "Unit-Datei & Protokolle"
+
+msgid "Path"
+msgstr "Pfad"
+
+msgid "Path copied to clipboard!"
+msgstr "Pfad in die Zwischenablage kopiert!"
+
+msgid "Nothing to copy"
+msgstr "Nichts zu kopieren"

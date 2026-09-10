@@ -71,8 +71,8 @@ msgstr "Servicios disponibles"
 msgid "Search and add services to your favorites."
 msgstr "Busque y añada servicios a sus favoritos."
 
-msgid "Search services..."
-msgstr "Buscar servicios..."
+msgid "Search..."
+msgstr "Buscar..."
 
 msgid "No favorites added yet."
 msgstr "Aún no se han añadido favoritos."
@@ -181,3 +181,75 @@ msgstr "Temporizador detenido: %s"
 
 msgid "Timer started: %s"
 msgstr "Temporizador iniciado: %s"
+
+msgid "Sockets"
+msgstr "Sockets"
+
+msgid "Mixed"
+msgstr "Mixto"
+
+msgid "Listening"
+msgstr "Escuchando"
+
+msgid "Status Information"
+msgstr "Información de estado"
+
+msgid "Active State"
+msgstr "Estado activo"
+
+msgid "Sub State"
+msgstr "Subestado"
+
+msgid "Uptime"
+msgstr "Tiempo de actividad"
+
+msgid "RAM Usage"
+msgstr "Uso de RAM"
+
+msgid "Runtime Controls"
+msgstr "Controles de ejecución"
+
+msgid "Start"
+msgstr "Iniciar"
+
+msgid "Stop"
+msgstr "Detener"
+
+msgid "Restart"
+msgstr "Reiniciar"
+
+msgid "Start command sent"
+msgstr "Comando de inicio enviado"
+
+msgid "Stop command sent"
+msgstr "Comando de detención enviado"
+
+msgid "Restart command sent"
+msgstr "Comando de reinicio enviado"
+
+msgid "Startup (Boot) Configuration"
+msgstr "Configuración de inicio"
+
+msgid "Enable (Auto-start)"
+msgstr "Habilitar (Auto-inicio)"
+
+msgid "Disable"
+msgstr "Deshabilitar"
+
+msgid "Enable command sent"
+msgstr "Comando de habilitación enviado"
+
+msgid "Disable command sent"
+msgstr "Comando de deshabilitación enviado"
+
+msgid "Unit File & Logs"
+msgstr "Archivo de unidad y registros"
+
+msgid "Path"
+msgstr "Ruta"
+
+msgid "Path copied to clipboard!"
+msgstr "¡Ruta copiada al portapapeles!"
+
+msgid "Nothing to copy"
+msgstr "Nada que copiar"

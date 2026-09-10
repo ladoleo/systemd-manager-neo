@@ -53,6 +53,7 @@ class Indicator extends PanelMenu.Button {
             const jsonStr = this._settings.get_string('service-groups');
             const raw = jsonStr ? JSON.parse(jsonStr) : {};
             // Handle dynamic migration for older service group formats
+            // Handle dynamic migration for older service group formats
             for (const [k, v] of Object.entries(raw)) {
                 if (Array.isArray(v)) {
                     groups[k] = { type: 'service', services: v };
@@ -80,17 +81,25 @@ class Indicator extends PanelMenu.Button {
 
         const fetchServiceData = async (favName) => {
             const loadedSvc = loadedServices.find(s => s.name === favName);
-            const timerName = favName.replace('.service', '.timer');
-            const loadedTimer = loadedServices.find(s => s.name === timerName);
-            
-            const hasTimer = !!loadedTimer;
-            
-            let isActive = loadedSvc ? (loadedSvc.activeState === 'active') : false;
-            let isFailed = loadedSvc ? (loadedSvc.activeState === 'failed') : false; 
-            
+            const isSocket = favName.endsWith('.socket');
+            let busType = loadedSvc ? loadedSvc.busType : 'system'; // Default fallback
+
+            // If it's a regular service, check for associated timer
+            let timerName = null;
+            let loadedTimer = null;
+            let hasTimer = false;
             let timerIsActive = false;
-            let labelText = favName.replace('.service', '');
             let timerText = null;
+
+            if (!isSocket) {
+                timerName = favName.replace('.service', '.timer');
+                loadedTimer = loadedServices.find(s => s.name === timerName);
+                hasTimer = !!loadedTimer;
+            }
+            
+            let isActive = loadedSvc ? (loadedSvc.activeState === 'active' || loadedSvc.activeState === 'listening') : false;
+            let isFailed = loadedSvc ? (loadedSvc.activeState === 'failed') : false; 
+            let labelText = favName.replace('.service', '').replace('.socket', '');
             
             if (hasTimer) {
                 timerIsActive = (loadedTimer.activeState === 'active');
@@ -112,7 +121,7 @@ class Indicator extends PanelMenu.Button {
                 labelText = `${labelText} [${_('FAILED')}]`;
             }
 
-            if (isActive && loadedSvc && loadedSvc.objectPath) {
+            if (isActive && loadedSvc && loadedSvc.objectPath && !isSocket) {
                 const stats = await Systemd.getServiceStats(loadedSvc.objectPath, loadedSvc.busType);
                 let statParts = [];
                 
@@ -121,15 +130,17 @@ class Indicator extends PanelMenu.Button {
                 if (stats.ram !== 'N/A') statParts.push(`RAM: ${stats.ram}`);
                 
                 if (statParts.length > 0) labelText += `   [${statParts.join(' | ')}]`;
+            } else if (isSocket && isActive) {
+                labelText += `   [${_('Listening')}]`;
             }
 
-            return { favName, timerName, labelText, isActive, isFailed, hasTimer, timerIsActive, timerText };
+            return { favName, timerName, labelText, isActive, isFailed, hasTimer, timerIsActive, timerText, isSocket, busType };
         };
 
         const buildServiceMenuItem = (data) => {
             const item = new PopupMenu.PopupBaseMenuItem({ activate: false });
 
-            // 1. TEXT BLOCK (Always on the left)
+            // 1. TEXT BLOCK (Left side)
             const labelBox = new St.BoxLayout({ vertical: true, x_expand: true });
             labelBox.set_style('margin-left: 8px;');
             
@@ -146,11 +157,21 @@ class Indicator extends PanelMenu.Button {
             }
             item.add_child(labelBox);
 
-            // 2. CONTROL BUTTON BLOCK (Right)
+            // 2. CONTROL BUTTONS (Right side)
             const btnBox = new St.BoxLayout({
                 vertical: false,
                 style: 'margin-right: 14px; margin-left: 8px;' 
             });
+
+            // Socket Icon (if applicable)
+            if (data.isSocket) {
+                 const socketIcon = new St.Icon({
+                    icon_name: 'network-wired-symbolic',
+                    icon_size: 16,
+                    style: 'margin-right: 8px; opacity: 0.7;'
+                });
+                btnBox.add_child(socketIcon);
+            }
 
             if (data.hasTimer) {
                 const timerIcon = new St.Icon({
@@ -171,10 +192,10 @@ class Indicator extends PanelMenu.Button {
                     let success = false;
                     if (data.timerIsActive) {
                         Main.notify(_('Systemd Manager Neo'), _('Stopping timer: %s').replace('%s', data.timerName));
-                        success = await Systemd.stopService(data.timerName);
+                        success = await Systemd.stopService(data.timerName, data.busType);
                     } else {
                         Main.notify(_('Systemd Manager Neo'), _('Starting timer: %s').replace('%s', data.timerName));
-                        success = await Systemd.startService(data.timerName);
+                        success = await Systemd.startService(data.timerName, data.busType);
                     }
                     if (success) {
                         Main.notify(_('Systemd Manager Neo'), (data.timerIsActive ? _('Timer stopped: %s') : _('Timer started: %s')).replace('%s', data.timerName));
@@ -210,7 +231,9 @@ class Indicator extends PanelMenu.Button {
                 let launched = false;
                 for (let t of terminals) {
                     if (GLib.find_program_in_path(t.bin)) {
-                        GLib.spawn_command_line_async(`${t.bin} ${t.arg} journalctl -u ${data.favName} -f`);
+                        // For user services, append --user to journalctl
+                        const userArg = data.busType === 'user' ? '--user ' : '';
+                        GLib.spawn_command_line_async(`${t.bin} ${t.arg} journalctl ${userArg}-u ${data.favName} -f`);
                         launched = true;
                         break;
                     }
@@ -219,7 +242,7 @@ class Indicator extends PanelMenu.Button {
             });
             btnBox.add_child(logBtn);
 
-            const actionIconName = data.hasTimer ? 'media-playback-start-symbolic' : 'view-refresh-symbolic';
+            const actionIconName = (data.hasTimer || data.isSocket) ? 'media-playback-start-symbolic' : 'view-refresh-symbolic';
             const actionBtn = new St.Button({
                 child: new St.Icon({ icon_name: actionIconName, icon_size: 16 }),
                 style_class: 'button',
@@ -227,14 +250,14 @@ class Indicator extends PanelMenu.Button {
             });
             actionBtn.connect('clicked', async () => {
                 this.menu.close();
-                if (data.hasTimer) {
+                if (data.hasTimer || data.isSocket) {
                     Main.notify(_('Systemd Manager Neo'), _('Starting: %s').replace('%s', data.favName));
-                    const success = await Systemd.startService(data.favName);
+                    const success = await Systemd.startService(data.favName, data.busType);
                     if (success) Main.notify(_('Systemd Manager Neo'), _('Started: %s').replace('%s', data.favName));
                     else Main.notify(_('Systemd Manager Neo'), _('Error starting: %s').replace('%s', data.favName));
                 } else {
                     Main.notify(_('Systemd Manager Neo'), _('Restarting: %s').replace('%s', data.favName));
-                    const success = await Systemd.restartService(data.favName);
+                    const success = await Systemd.restartService(data.favName, data.busType);
                     if (success) Main.notify(_('Systemd Manager Neo'), _('Restarted: %s').replace('%s', data.favName));
                     else Main.notify(_('Systemd Manager Neo'), _('Error restarting: %s').replace('%s', data.favName));
                 }
@@ -250,8 +273,8 @@ class Indicator extends PanelMenu.Button {
                 stateSwitch.connect('notify::state', async () => {
                     const state = stateSwitch.state;
                     let success = false;
-                    if (state) success = await Systemd.startService(data.favName);
-                    else success = await Systemd.stopService(data.favName);
+                    if (state) success = await Systemd.startService(data.favName, data.busType);
+                    else success = await Systemd.stopService(data.favName, data.busType);
                     
                     if (success) {
                         Main.notify(_('Systemd Manager Neo'), (state ? _('Started: %s') : _('Stopped: %s')).replace('%s', data.favName));
@@ -275,7 +298,6 @@ class Indicator extends PanelMenu.Button {
 
             const subMenu = new PopupMenu.PopupSubMenuMenuItem(groupName);
 
-            
             if (groupType === 'timer') {
                 const groupTimerIcon = new St.Icon({
                     icon_name: 'weather-hourly-symbolic',
@@ -296,19 +318,18 @@ class Indicator extends PanelMenu.Button {
                     icon_size: 16,
                     style: 'color: #ed333b; margin-left: 6px;'
                 });
-                // Insert the error icon after the timer icon (at index 3), if there is one
                 subMenu.insert_child_at_index(groupErrorIcon, groupType === 'timer' ? 3 : 2);
             }
 
-            // MASS LAUNCH - Add ONLY if this is a group of regular services
+            // MASS LAUNCH - Add ONLY if it's not a timer group
             if (groupType !== 'timer') {
                 const startAllItem = new PopupMenu.PopupImageMenuItem(_('Start All'), 'media-playback-start-symbolic');
                 startAllItem.connect('activate', async () => {
                     this.menu.close();
                     Main.notify(_('Systemd Manager Neo'), _('Starting group: %s').replace('%s', groupName));
                     let successCount = 0;
-                    for (let s of groupServices) {
-                        if (await Systemd.startService(s)) successCount++;
+                    for (let data of groupItemsData) {
+                        if (await Systemd.startService(data.favName, data.busType)) successCount++;
                     }
                     Main.notify(_('Systemd Manager Neo'), _('Group started: %s (%d/%d)').replace('%s', groupName).replace('%d', successCount).replace('%d', groupServices.length));
                 });
@@ -319,8 +340,8 @@ class Indicator extends PanelMenu.Button {
                     this.menu.close();
                     Main.notify(_('Systemd Manager Neo'), _('Stopping group: %s').replace('%s', groupName));
                     let successCount = 0;
-                    for (let s of groupServices) {
-                        if (await Systemd.stopService(s)) successCount++;
+                    for (let data of groupItemsData) {
+                        if (await Systemd.stopService(data.favName, data.busType)) successCount++;
                     }
                     Main.notify(_('Systemd Manager Neo'), _('Group stopped: %s (%d/%d)').replace('%s', groupName).replace('%d', successCount).replace('%d', groupServices.length));
                 });

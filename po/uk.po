@@ -71,8 +71,8 @@ msgstr "Доступні сервіси"
 msgid "Search and add services to your favorites."
 msgstr "Шукайте та додавайте сервіси до обраних."
 
-msgid "Search services..."
-msgstr "Пошук сервісів..."
+msgid "Search..."
+msgstr "Пошук..."
 
 msgid "No favorites added yet."
 msgstr "Ще не додано жодного сервісу."
@@ -181,3 +181,75 @@ msgstr "Таймер зупинено: %s"
 
 msgid "Timer started: %s"
 msgstr "Таймер запущено: %s"
+
+msgid "Sockets"
+msgstr "Сокети"
+
+msgid "Mixed"
+msgstr "Змішані"
+
+msgid "Listening"
+msgstr "Прослуховування"
+
+msgid "Status Information"
+msgstr "Інформація про стан"
+
+msgid "Active State"
+msgstr "Активний стан"
+
+msgid "Sub State"
+msgstr "Внутрішній стан"
+
+msgid "Uptime"
+msgstr "Час роботи"
+
+msgid "RAM Usage"
+msgstr "Використання ОЗП"
+
+msgid "Runtime Controls"
+msgstr "Керування роботою"
+
+msgid "Start"
+msgstr "Запустити"
+
+msgid "Stop"
+msgstr "Зупинити"
+
+msgid "Restart"
+msgstr "Перезапустити"
+
+msgid "Start command sent"
+msgstr "Команду запуску надіслано"
+
+msgid "Stop command sent"
+msgstr "Команду зупинки надіслано"
+
+msgid "Restart command sent"
+msgstr "Команду перезапуску надіслано"
+
+msgid "Startup (Boot) Configuration"
+msgstr "Конфігурація автозапуску"
+
+msgid "Enable (Auto-start)"
+msgstr "Увімкнути (Автозапуск)"
+
+msgid "Disable"
+msgstr "Вимкнути"
+
+msgid "Enable command sent"
+msgstr "Команду вмикання надіслано"
+
+msgid "Disable command sent"
+msgstr "Команду вимикання надіслано"
+
+msgid "Unit File & Logs"
+msgstr "Файл юніта та Логи"
+
+msgid "Path"
+msgstr "Шлях"
+
+msgid "Path copied to clipboard!"
+msgstr "Шлях скопійовано в буфер обміну!"
+
+msgid "Nothing to copy"
+msgstr "Немає що копіювати"

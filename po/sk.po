@@ -72,8 +72,8 @@ msgstr "Dostupné služby"
 msgid "Search and add services to your favorites."
 msgstr "Vyhľadajte a pridajte služby k svojim obľúbeným."
 
-msgid "Search services..."
-msgstr "Hľadať služby..."
+msgid "Search..."
+msgstr "Hľadať..."
 
 msgid "No favorites added yet."
 msgstr "Zatiaľ neboli pridané žiadne obľúbené služby."
@@ -182,3 +182,75 @@ msgstr "Časovač zastavený: %s"
 
 msgid "Timer started: %s"
 msgstr "Časovač spustený: %s"
+
+msgid "Sockets"
+msgstr "Sokety"
+
+msgid "Mixed"
+msgstr "Zmiešané"
+
+msgid "Listening"
+msgstr "Počúva"
+
+msgid "Status Information"
+msgstr "Informácie o stave"
+
+msgid "Active State"
+msgstr "Aktívny stav"
+
+msgid "Sub State"
+msgstr "Podstav"
+
+msgid "Uptime"
+msgstr "Čas behu"
+
+msgid "RAM Usage"
+msgstr "Využitie RAM"
+
+msgid "Runtime Controls"
+msgstr "Ovládanie behu"
+
+msgid "Start"
+msgstr "Spustiť"
+
+msgid "Stop"
+msgstr "Zastaviť"
+
+msgid "Restart"
+msgstr "Reštartovať"
+
+msgid "Start command sent"
+msgstr "Príkaz na spustenie bol odoslaný"
+
+msgid "Stop command sent"
+msgstr "Príkaz na zastavenie bol odoslaný"
+
+msgid "Restart command sent"
+msgstr "Príkaz na reštart bol odoslaný"
+
+msgid "Startup (Boot) Configuration"
+msgstr "Konfigurácia pri štarte"
+
+msgid "Enable (Auto-start)"
+msgstr "Povoliť (Autostart)"
+
+msgid "Disable"
+msgstr "Zakázať"
+
+msgid "Enable command sent"
+msgstr "Príkaz na povolenie bol odoslaný"
+
+msgid "Disable command sent"
+msgstr "Príkaz na zakázanie bol odoslaný"
+
+msgid "Unit File & Logs"
+msgstr "Súbor jednotky a záznamy"
+
+msgid "Path"
+msgstr "Cesta"
+
+msgid "Path copied to clipboard!"
+msgstr "Cesta skopírovaná do schránky!"
+
+msgid "Nothing to copy"
+msgstr "Nič na kopírovanie"

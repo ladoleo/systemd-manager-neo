@@ -71,8 +71,8 @@ msgstr "Dostępne usługi"
 msgid "Search and add services to your favorites."
 msgstr "Wyszukaj i dodaj usługi do ulubionych."
 
-msgid "Search services..."
-msgstr "Szukaj usług..."
+msgid "Search..."
+msgstr "Szukaj..."
 
 msgid "No favorites added yet."
 msgstr "Nie dodano jeszcze żadnych ulubionych."
@@ -181,3 +181,75 @@ msgstr "Timer zatrzymany: %s"
 
 msgid "Timer started: %s"
 msgstr "Timer uruchomiony: %s"
+
+msgid "Sockets"
+msgstr "Gniazda"
+
+msgid "Mixed"
+msgstr "Mieszane"
+
+msgid "Listening"
+msgstr "Nasłuchiwanie"
+
+msgid "Status Information"
+msgstr "Informacje o stanie"
+
+msgid "Active State"
+msgstr "Stan aktywności"
+
+msgid "Sub State"
+msgstr "Stan szczegółowy"
+
+msgid "Uptime"
+msgstr "Czas pracy"
+
+msgid "RAM Usage"
+msgstr "Zużycie RAM"
+
+msgid "Runtime Controls"
+msgstr "Sterowanie działaniem"
+
+msgid "Start"
+msgstr "Uruchom"
+
+msgid "Stop"
+msgstr "Zatrzymaj"
+
+msgid "Restart"
+msgstr "Uruchom ponownie"
+
+msgid "Start command sent"
+msgstr "Wysłano polecenie uruchomienia"
+
+msgid "Stop command sent"
+msgstr "Wysłano polecenie zatrzymania"
+
+msgid "Restart command sent"
+msgstr "Wysłano polecenie ponownego uruchomienia"
+
+msgid "Startup (Boot) Configuration"
+msgstr "Konfiguracja autostartu"
+
+msgid "Enable (Auto-start)"
+msgstr "Włącz (Autostart)"
+
+msgid "Disable"
+msgstr "Wyłącz"
+
+msgid "Enable command sent"
+msgstr "Wysłano polecenie włączenia"
+
+msgid "Disable command sent"
+msgstr "Wysłano polecenie wyłączenia"
+
+msgid "Unit File & Logs"
+msgstr "Plik jednostki i logi"
+
+msgid "Path"
+msgstr "Ścieżka"
+
+msgid "Path copied to clipboard!"
+msgstr "Ścieżka skopiowana do schowka!"
+
+msgid "Nothing to copy"
+msgstr "Nie ma nic do skopiowania"
