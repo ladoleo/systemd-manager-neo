@@ -31,7 +31,6 @@ export default class SystemdManagerNeoPreferences extends ExtensionPreferences {
         window.set_modal(true);
 
         // --- TAB 1: SERVICES ---
-        // --- TAB 1: SERVICES ---
         const pageServices = new Adw.PreferencesPage({
             title: _('Services'),
             icon_name: 'emblem-system-symbolic'
