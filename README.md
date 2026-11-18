@@ -36,7 +36,7 @@ For those who prefer building from source:
 
 1. **Clone the repository**:
 ```bash
-git clone [https://github.com/ladoleo/systemd-manager-neo.git](https://github.com/ladoleo/systemd-manager-neo.git)
+git clone https://github.com/ladoleo/systemd-manager-neo.git
 cd systemd-manager-neo
 ```
 
