@@ -4,7 +4,6 @@
   "name": "Systemd Manager Neo",
   "settings-schema": "org.gnome.shell.extensions.systemd-manager-neo",
   "shell-version": [
-    "47",
     "48",
     "49",
     "50",

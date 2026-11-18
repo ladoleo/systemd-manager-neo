@@ -60,7 +60,7 @@ cp -r . ~/.local/share/gnome-shell/extensions/systemd-manager-neo@ladoleo.local
 
 ## 🛠 Specifications
 
-* **Shell Support**: Optimized for GNOME Shell versions 47, 48, 49, 50, and 51.
+* **Shell Support**: Optimized for GNOME Shell versions 48, 49, 50, and 51.
 * **Licensing**: Distributed under the **GNU GPLv3** license.
 
 ## 🤝 Contributing
