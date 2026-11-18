@@ -1,7 +1,3 @@
-
----
-
-
 # 😈 Systemd Manager Neo
 
 **Systemd Manager Neo** is a sophisticated GNOME Shell extension designed for power users, developers, and sysadmins who need instant control over their system services, timers, and sockets. It brings the power of `systemctl` to your top panel and provides a full-fledged native libadwaita dashboard for deep system management.
@@ -42,31 +38,29 @@ For those who prefer building from source:
 ```bash
 git clone [https://github.com/ladoleo/systemd-manager-neo.git](https://github.com/ladoleo/systemd-manager-neo.git)
 cd systemd-manager-neo
-
 ```
 
 2. **Compile schemas & Locales**:
-
 ```bash
 glib-compile-schemas schemas/
 # Compile translations
-for lang in de es pl sk uk; do msgfmt po/${lang}.po -o locale/${lang}/LC_MESSAGES/systemd-manager-neo.mo; done
-
+for lang in de es pl sk uk; do
+    mkdir -p locale/${lang}/LC_MESSAGES
+    msgfmt po/${lang}.po -o locale/${lang}/LC_MESSAGES/systemd-manager-neo.mo
+done
 ```
 
 3. **Deploy**:
-
 ```bash
 mkdir -p ~/.local/share/gnome-shell/extensions/
 cp -r . ~/.local/share/gnome-shell/extensions/systemd-manager-neo@ladoleo.local
-
 ```
 
 4. **Restart Shell**: Press `Alt+F2`, type `r` and hit `Enter` (X11) or Log out and Log in (Wayland).
 
 ## 🛠 Specifications
 
-* **Shell Support**: Optimized for GNOME Shell versions 47, 48, 49, and 50.
+* **Shell Support**: Optimized for GNOME Shell versions 47, 48, 49, 50, and 51.
 * **Licensing**: Distributed under the **GNU GPLv3** license.
 
 ## 🤝 Contributing
