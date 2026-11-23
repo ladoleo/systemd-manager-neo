@@ -41,6 +41,11 @@ class Indicator extends PanelMenu.Button {
         prefsItem.connect('activate', () => this._extension?.openPreferences());
         this.menu.addMenuItem(prefsItem);
 
+        this._settingsChangedId = this._settings.connect('changed', (settings, key) => {
+            if (key === 'favorite-services' || key === 'service-groups')
+                Systemd.invalidateUnitBusesCache();
+        });
+
         this._onOpenId = this.menu.connect('open-state-changed', (m, open) => {
             if (open)
                 this._buildMenu();
@@ -55,8 +60,14 @@ class Indicator extends PanelMenu.Button {
                 return;
 
             this._servicesSection.removeAll();
+            const loadingItem = new PopupMenu.PopupMenuItem(_('Loading...'));
+            loadingItem.sensitive = false;
+            this._servicesSection.addMenuItem(loadingItem);
 
-            const loadedServices = await Systemd.getLoadedServices();
+            const [loadedServices, unitBuses] = await Promise.all([
+                Systemd.getLoadedServices(),
+                Systemd.getUnitBuses(),
+            ]);
             if (currentBuildId !== this._buildId || !this._settings || !this._servicesSection)
                 return;
 
@@ -86,6 +97,7 @@ class Indicator extends PanelMenu.Button {
             const standaloneFavorites = favorites.filter(s => !groupedServices.has(s));
 
             if (favorites.length === 0 && Object.keys(groups).length === 0) {
+                this._servicesSection.removeAll();
                 const item = new PopupMenu.PopupMenuItem(_('List is empty. Open Settings.'));
                 item.sensitive = false;
                 this._servicesSection.addMenuItem(item);
@@ -95,7 +107,13 @@ class Indicator extends PanelMenu.Button {
             const fetchServiceData = async (favName) => {
                 const loadedSvc = loadedServices.find(s => s.name === favName);
                 const isSocket = favName.endsWith('.socket');
-                const busType = loadedSvc ? loadedSvc.busType : 'system';
+                let busType = loadedSvc ? loadedSvc.busType : unitBuses.get(favName);
+
+                // Refresh cache once if a newly created unit file wasn't in the initial snapshot
+                if (!busType) {
+                    const refreshedBuses = await Systemd.getUnitBuses(true);
+                    busType = refreshedBuses.get(favName) || 'system';
+                }
 
                 let timerName = null;
                 let loadedTimer = null;
@@ -135,7 +153,7 @@ class Indicator extends PanelMenu.Button {
                     labelText = `${labelText} [${_('FAILED')}]`;
 
                 if (isActive && loadedSvc && loadedSvc.objectPath && !isSocket) {
-                    const stats = await Systemd.getServiceStats(loadedSvc.objectPath, loadedSvc.busType);
+                    const stats = await Systemd.getServiceStats(loadedSvc.objectPath, loadedSvc.busType, false);
                     const statParts = [];
 
                     if (loadedSvc.subState)
@@ -331,18 +349,25 @@ class Indicator extends PanelMenu.Button {
                 return item;
             };
 
+            const validGroups = Object.entries(groups).filter(([, g]) => Array.isArray(g?.services) && g.services.length > 0);
+            const [resolvedGroups, standaloneItemsData] = await Promise.all([
+                Promise.all(validGroups.map(async ([groupName, groupData]) => ({
+                    groupName,
+                    groupData,
+                    itemsData: await Promise.all(groupData.services.map(fetchServiceData)),
+                }))),
+                Promise.all(standaloneFavorites.map(fetchServiceData)),
+            ]);
+
+            if (currentBuildId !== this._buildId || !this._servicesSection)
+                return;
+
+            this._servicesSection.removeAll();
+
             let hasGroupsRendered = false;
-            for (const [groupName, groupData] of Object.entries(groups)) {
+            for (const { groupName, groupData, itemsData: groupItemsData } of resolvedGroups) {
                 const groupType = groupData.type;
-                const groupServices = groupData.services || [];
-
-                if (groupServices.length === 0)
-                    continue;
-
-                const groupDataPromises = groupServices.map(fetchServiceData);
-                const groupItemsData = await Promise.all(groupDataPromises);
-                if (currentBuildId !== this._buildId || !this._servicesSection)
-                    return;
+                const groupServices = groupData.services;
 
                 hasGroupsRendered = true;
                 const subMenu = new PopupMenu.PopupSubMenuMenuItem(groupName);
@@ -405,12 +430,7 @@ class Indicator extends PanelMenu.Button {
                 this._servicesSection.addMenuItem(subMenu);
             }
 
-            if (standaloneFavorites.length > 0) {
-                const standaloneDataPromises = standaloneFavorites.map(fetchServiceData);
-                const standaloneItemsData = await Promise.all(standaloneDataPromises);
-                if (currentBuildId !== this._buildId || !this._servicesSection)
-                    return;
-
+            if (standaloneItemsData.length > 0) {
                 if (hasGroupsRendered)
                     this._servicesSection.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
@@ -426,10 +446,15 @@ class Indicator extends PanelMenu.Button {
 
     destroy() {
         this._buildId++;
+        if (this._settingsChangedId && this._settings) {
+            this._settings.disconnect(this._settingsChangedId);
+            this._settingsChangedId = null;
+        }
         if (this._onOpenId) {
             this.menu.disconnect(this._onOpenId);
             this._onOpenId = null;
         }
+        Systemd.invalidateUnitBusesCache();
         this._settings = null;
         this._extension = null;
         super.destroy();

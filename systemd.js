@@ -11,6 +11,8 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
+let _cachedUnitBuses = null;
+
 function getSysConn() { return Gio.bus_get_sync(Gio.BusType.SYSTEM, null); }
 function getUsrConn() { return Gio.bus_get_sync(Gio.BusType.SESSION, null); }
 
@@ -20,7 +22,7 @@ function formatUptime(ms) {
     const d = Math.floor(totalSec / 86400);
     const h = Math.floor((totalSec % 86400) / 3600);
     const m = Math.floor((totalSec % 3600) / 60);
-    let parts = [];
+    const parts = [];
     if (d > 0) parts.push(`${d}d`);
     if (h > 0) parts.push(`${h}h`);
     if (m > 0) parts.push(`${m}m`);
@@ -29,66 +31,140 @@ function formatUptime(ms) {
 }
 
 function formatBytes(bytes) {
+    if (!bytes || bytes <= 0) return '0 B';
     const k = 1024;
     const sizes = ['B', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+    return `${parseFloat((bytes / Math.pow(k, i)).toFixed(1))} ${sizes[i]}`;
+}
+
+export function invalidateUnitBusesCache() {
+    _cachedUnitBuses = null;
 }
 
 export async function getLoadedServices() {
     const units = [];
-    
+
     try {
-        const resSys = await getSysConn().call('org.freedesktop.systemd1', '/org/freedesktop/systemd1', 'org.freedesktop.systemd1.Manager', 'ListUnits', null, null, Gio.DBusCallFlags.NONE, -1, null);
+        const resSys = await getSysConn().call(
+            'org.freedesktop.systemd1',
+            '/org/freedesktop/systemd1',
+            'org.freedesktop.systemd1.Manager',
+            'ListUnits',
+            null,
+            null,
+            Gio.DBusCallFlags.NONE,
+            -1,
+            null
+        );
         const unitsSys = resSys.recursiveUnpack()[0];
         unitsSys.forEach(unit => {
             const name = unit[0];
             if (name.endsWith('.service') || name.endsWith('.timer') || name.endsWith('.socket')) {
                 units.push({
-                    name: name,
+                    name,
                     description: unit[1],
                     loadState: unit[2],
                     activeState: unit[3],
                     subState: unit[4],
                     objectPath: unit[6],
-                    busType: 'system'
+                    busType: 'system',
                 });
             }
         });
-    } catch(e) { console.error('[Systemd Manager Neo] System DBus Error:', e); }
+    } catch (e) {
+        console.error('[Systemd Manager Neo] System DBus Error:', e);
+    }
 
     try {
-        const resUsr = await getUsrConn().call('org.freedesktop.systemd1', '/org/freedesktop/systemd1', 'org.freedesktop.systemd1.Manager', 'ListUnits', null, null, Gio.DBusCallFlags.NONE, -1, null);
+        const resUsr = await getUsrConn().call(
+            'org.freedesktop.systemd1',
+            '/org/freedesktop/systemd1',
+            'org.freedesktop.systemd1.Manager',
+            'ListUnits',
+            null,
+            null,
+            Gio.DBusCallFlags.NONE,
+            -1,
+            null
+        );
         const unitsUsr = resUsr.recursiveUnpack()[0];
         unitsUsr.forEach(unit => {
             const name = unit[0];
             if (name.endsWith('.service') || name.endsWith('.timer') || name.endsWith('.socket')) {
                 units.push({
-                    name: name,
+                    name,
                     description: unit[1],
                     loadState: unit[2],
                     activeState: unit[3],
                     subState: unit[4],
                     objectPath: unit[6],
-                    busType: 'user'
+                    busType: 'user',
                 });
             }
         });
-    } catch(e) { console.error('[Systemd Manager Neo] User DBus Error:', e); }
+    } catch (e) {
+        console.error('[Systemd Manager Neo] User DBus Error:', e);
+    }
 
     return units;
 }
 
-// FIXED: Robust DBus property extractor (bypasses recursiveUnpack bugs)
+// Resolve and cache bus types ('system' vs 'user') for all unit files on disk
+export async function getUnitBuses(forceRefresh = false) {
+    if (_cachedUnitBuses && !forceRefresh)
+        return _cachedUnitBuses;
+
+    const busMap = new Map();
+
+    for (const [getConn, busType] of [[getSysConn, 'system'], [getUsrConn, 'user']]) {
+        try {
+            const res = await getConn().call(
+                'org.freedesktop.systemd1',
+                '/org/freedesktop/systemd1',
+                'org.freedesktop.systemd1.Manager',
+                'ListUnitFiles',
+                null,
+                null,
+                Gio.DBusCallFlags.NONE,
+                -1,
+                null
+            );
+            const files = res.recursiveUnpack()[0];
+            files.forEach(f => {
+                const name = f[0].split('/').pop();
+                if (name && (name.endsWith('.service') || name.endsWith('.timer') || name.endsWith('.socket')))
+                    busMap.set(name, busType);
+            });
+        } catch (e) {
+            console.error(`[Systemd Manager Neo] ${busType} ListUnitFiles Error:`, e);
+        }
+    }
+
+    _cachedUnitBuses = busMap;
+    return busMap;
+}
+
+// Robust DBus property extractor (bypasses recursiveUnpack bugs)
 async function getDBusPropertySafe(conn, objectPath, iface, propName) {
     try {
-        const res = await conn.call('org.freedesktop.systemd1', objectPath, 'org.freedesktop.DBus.Properties', 'Get', new GLib.Variant('(ss)', [iface, propName]), null, Gio.DBusCallFlags.NONE, -1, null);
-        const v = res.get_child_value(0).get_variant(); // Extract inner variant safely
+        const res = await conn.call(
+            'org.freedesktop.systemd1',
+            objectPath,
+            'org.freedesktop.DBus.Properties',
+            'Get',
+            new GLib.Variant('(ss)', [iface, propName]),
+            null,
+            Gio.DBusCallFlags.NONE,
+            -1,
+            null
+        );
+        const v = res.get_child_value(0).get_variant();
         const typeStr = v.get_type_string();
-        
+
         if (typeStr === 's' || typeStr === 'o') return v.get_string()[0];
         if (typeStr === 't' || typeStr === 'u') return Number(v.get_uint64 ? v.get_uint64() : v.get_uint32());
-        
+
         if (v.deepUnpack) return v.deepUnpack();
         if (v.recursiveUnpack) return v.recursiveUnpack();
         return v.unpack();
@@ -97,66 +173,97 @@ async function getDBusPropertySafe(conn, objectPath, iface, propName) {
     }
 }
 
-export async function getServiceStats(objectPath, busType) {
+export async function getServiceStats(objectPath, busType, includePath = true) {
     const conn = busType === 'system' ? getSysConn() : getUsrConn();
-    let uptimeStr = 'N/A', ramStr = 'N/A', fragmentPath = 'N/A';
+    let uptimeStr = 'N/A';
+    let ramStr = 'N/A';
+    let fragmentPath = 'N/A';
 
-    const ts = await getDBusPropertySafe(conn, objectPath, 'org.freedesktop.systemd1.Unit', 'ActiveEnterTimestamp');
+    const [ts, mem, path] = await Promise.all([
+        getDBusPropertySafe(conn, objectPath, 'org.freedesktop.systemd1.Unit', 'ActiveEnterTimestamp'),
+        getDBusPropertySafe(conn, objectPath, 'org.freedesktop.systemd1.Service', 'MemoryCurrent'),
+        includePath
+            ? getDBusPropertySafe(conn, objectPath, 'org.freedesktop.systemd1.Unit', 'FragmentPath')
+            : Promise.resolve(null),
+    ]);
+
     if (ts && ts > 0) uptimeStr = formatUptime(Date.now() - (ts / 1000));
-
-    const mem = await getDBusPropertySafe(conn, objectPath, 'org.freedesktop.systemd1.Service', 'MemoryCurrent');
     if (mem && mem > 0 && mem < 9007199254740991) ramStr = formatBytes(mem);
-
-    const path = await getDBusPropertySafe(conn, objectPath, 'org.freedesktop.systemd1.Unit', 'FragmentPath');
     if (path) fragmentPath = path;
 
-    return { uptime: uptimeStr, ram: ramStr, fragmentPath: fragmentPath };
+    return { uptime: uptimeStr, ram: ramStr, fragmentPath };
+}
+
+function shouldFallbackToPkexec(err, busType) {
+    if (busType !== 'system')
+        return false;
+
+    const msg = err?.message || String(err);
+    if (msg.includes('Dismissed') || msg.includes('Cancelled') || msg.includes('NoSuchUnit'))
+        return false;
+
+    const isFlatpak = GLib.file_test('/.flatpak-info', GLib.FileTest.EXISTS);
+    return isFlatpak || msg.includes('InteractiveAuthorizationRequired') || msg.includes('NotSupported');
 }
 
 async function fallbackSystemctl(cmdAction, unitName, busType) {
     try {
-        // Automatically check if running inside a sandbox (Flatpak)
-        let isFlatpak = GLib.file_test('/.flatpak-info', GLib.FileTest.EXISTS);
-        let cmd = busType === 'system' 
+        const isFlatpak = GLib.file_test('/.flatpak-info', GLib.FileTest.EXISTS);
+        let cmd = busType === 'system'
             ? ['pkexec', 'systemctl', cmdAction, unitName]
             : ['systemctl', '--user', cmdAction, unitName];
-            
-        if (isFlatpak) {
+
+        if (isFlatpak)
             cmd = ['flatpak-spawn', '--host'].concat(cmd);
-        }
-            
+
         const proc = Gio.Subprocess.new(cmd, Gio.SubprocessFlags.NONE);
         return await new Promise((resolve) => {
             proc.wait_async(null, (p, res) => {
                 try {
                     p.wait_finish(res);
                     resolve(p.get_successful());
-                } catch (e) { resolve(false); }
+                } catch (e) {
+                    resolve(false);
+                }
             });
         });
-    } catch (e) { return false; }
+    } catch (e) {
+        return false;
+    }
 }
 
 async function executeAction(unitName, action, busType) {
     const args = new GLib.Variant('(ss)', [unitName, 'replace']);
     const conn = busType === 'system' ? getSysConn() : getUsrConn();
-    
+
     try {
-        await conn.call('org.freedesktop.systemd1', '/org/freedesktop/systemd1', 'org.freedesktop.systemd1.Manager', action, args, null, Gio.DBusCallFlags.ALLOW_INTERACTIVE_AUTHORIZATION, -1, null);
+        await conn.call(
+            'org.freedesktop.systemd1',
+            '/org/freedesktop/systemd1',
+            'org.freedesktop.systemd1.Manager',
+            action,
+            args,
+            null,
+            Gio.DBusCallFlags.ALLOW_INTERACTIVE_AUTHORIZATION,
+            -1,
+            null
+        );
         return true;
     } catch (e) {
-        const cmdAction = action.replace('Unit', '').toLowerCase(); 
-        return await fallbackSystemctl(cmdAction, unitName, busType);
+        console.error(`[Systemd Manager Neo] DBus ${action} failed for ${unitName} (${busType}):`, e);
+        if (shouldFallbackToPkexec(e, busType)) {
+            const cmdAction = action.replace('Unit', '').toLowerCase();
+            return await fallbackSystemctl(cmdAction, unitName, busType);
+        }
+        return false;
     }
 }
 
 export async function getTimerNextRun(objectPath, busType) {
-    try {
-        const conn = busType === 'system' ? getSysConn() : getUsrConn();
-        const res = await conn.call('org.freedesktop.systemd1', objectPath, 'org.freedesktop.DBus.Properties', 'Get', new GLib.Variant('(ss)', ['org.freedesktop.systemd1.Timer', 'NextElapseUSecRealtime']), null, Gio.DBusCallFlags.NONE, -1, null);
-        const usec = res.get_child_value(0).get_variant().get_uint64();
-        if (usec > 0) return new Date(Number(usec) / 1000).toLocaleString();
-    } catch(e) {}
+    const conn = busType === 'system' ? getSysConn() : getUsrConn();
+    const usec = await getDBusPropertySafe(conn, objectPath, 'org.freedesktop.systemd1.Timer', 'NextElapseUSecRealtime');
+    if (usec && usec > 0)
+        return new Date(usec / 1000).toLocaleString();
     return 'N/A';
 }
 
@@ -168,11 +275,34 @@ export async function enableService(unitName, busType) {
     const conn = busType === 'system' ? getSysConn() : getUsrConn();
     const args = new GLib.Variant('(asbb)', [[unitName], false, true]);
     try {
-        await conn.call('org.freedesktop.systemd1', '/org/freedesktop/systemd1', 'org.freedesktop.systemd1.Manager', 'EnableUnitFiles', args, null, Gio.DBusCallFlags.ALLOW_INTERACTIVE_AUTHORIZATION, -1, null);
-        await conn.call('org.freedesktop.systemd1', '/org/freedesktop/systemd1', 'org.freedesktop.systemd1.Manager', 'Reload', null, null, Gio.DBusCallFlags.NONE, -1, null);
+        await conn.call(
+            'org.freedesktop.systemd1',
+            '/org/freedesktop/systemd1',
+            'org.freedesktop.systemd1.Manager',
+            'EnableUnitFiles',
+            args,
+            null,
+            Gio.DBusCallFlags.ALLOW_INTERACTIVE_AUTHORIZATION,
+            -1,
+            null
+        );
+        await conn.call(
+            'org.freedesktop.systemd1',
+            '/org/freedesktop/systemd1',
+            'org.freedesktop.systemd1.Manager',
+            'Reload',
+            null,
+            null,
+            Gio.DBusCallFlags.NONE,
+            -1,
+            null
+        );
         return true;
     } catch (e) {
-        return await fallbackSystemctl('enable', unitName, busType);
+        console.error(`[Systemd Manager Neo] DBus EnableUnitFiles failed for ${unitName} (${busType}):`, e);
+        if (shouldFallbackToPkexec(e, busType))
+            return await fallbackSystemctl('enable', unitName, busType);
+        return false;
     }
 }
 
@@ -180,36 +310,84 @@ export async function disableService(unitName, busType) {
     const conn = busType === 'system' ? getSysConn() : getUsrConn();
     const args = new GLib.Variant('(asb)', [[unitName], false]);
     try {
-        await conn.call('org.freedesktop.systemd1', '/org/freedesktop/systemd1', 'org.freedesktop.systemd1.Manager', 'DisableUnitFiles', args, null, Gio.DBusCallFlags.ALLOW_INTERACTIVE_AUTHORIZATION, -1, null);
-        await conn.call('org.freedesktop.systemd1', '/org/freedesktop/systemd1', 'org.freedesktop.systemd1.Manager', 'Reload', null, null, Gio.DBusCallFlags.NONE, -1, null);
+        await conn.call(
+            'org.freedesktop.systemd1',
+            '/org/freedesktop/systemd1',
+            'org.freedesktop.systemd1.Manager',
+            'DisableUnitFiles',
+            args,
+            null,
+            Gio.DBusCallFlags.ALLOW_INTERACTIVE_AUTHORIZATION,
+            -1,
+            null
+        );
+        await conn.call(
+            'org.freedesktop.systemd1',
+            '/org/freedesktop/systemd1',
+            'org.freedesktop.systemd1.Manager',
+            'Reload',
+            null,
+            null,
+            Gio.DBusCallFlags.NONE,
+            -1,
+            null
+        );
         return true;
     } catch (e) {
-        return await fallbackSystemctl('disable', unitName, busType);
+        console.error(`[Systemd Manager Neo] DBus DisableUnitFiles failed for ${unitName} (${busType}):`, e);
+        if (shouldFallbackToPkexec(e, busType))
+            return await fallbackSystemctl('disable', unitName, busType);
+        return false;
     }
 }
 
 export async function getUnitDetails(unitName, busType) {
-    let activeState = 'N/A', subState = 'N/A', fragmentPath = 'N/A', uptime = 'N/A', ram = 'N/A';
+    let activeState = 'N/A';
+    let subState = 'N/A';
+    let fragmentPath = 'N/A';
+    let uptime = 'N/A';
+    let ram = 'N/A';
     const conn = busType === 'system' ? getSysConn() : getUsrConn();
     let objectPath = null;
 
     try {
         try {
-            const pathRes = await conn.call('org.freedesktop.systemd1', '/org/freedesktop/systemd1', 'org.freedesktop.systemd1.Manager', 'GetUnit', new GLib.Variant('(s)', [unitName]), null, Gio.DBusCallFlags.NONE, -1, null);
+            const pathRes = await conn.call(
+                'org.freedesktop.systemd1',
+                '/org/freedesktop/systemd1',
+                'org.freedesktop.systemd1.Manager',
+                'GetUnit',
+                new GLib.Variant('(s)', [unitName]),
+                null,
+                Gio.DBusCallFlags.NONE,
+                -1,
+                null
+            );
             objectPath = pathRes.get_child_value(0).get_string()[0];
         } catch (e) {
-            const loadRes = await conn.call('org.freedesktop.systemd1', '/org/freedesktop/systemd1', 'org.freedesktop.systemd1.Manager', 'LoadUnit', new GLib.Variant('(s)', [unitName]), null, Gio.DBusCallFlags.NONE, -1, null);
+            const loadRes = await conn.call(
+                'org.freedesktop.systemd1',
+                '/org/freedesktop/systemd1',
+                'org.freedesktop.systemd1.Manager',
+                'LoadUnit',
+                new GLib.Variant('(s)', [unitName]),
+                null,
+                Gio.DBusCallFlags.NONE,
+                -1,
+                null
+            );
             objectPath = loadRes.get_child_value(0).get_string()[0];
         }
 
         if (objectPath) {
-            const aState = await getDBusPropertySafe(conn, objectPath, 'org.freedesktop.systemd1.Unit', 'ActiveState');
+            const [aState, sState, stats] = await Promise.all([
+                getDBusPropertySafe(conn, objectPath, 'org.freedesktop.systemd1.Unit', 'ActiveState'),
+                getDBusPropertySafe(conn, objectPath, 'org.freedesktop.systemd1.Unit', 'SubState'),
+                getServiceStats(objectPath, busType, true),
+            ]);
+
             if (aState) activeState = aState;
-
-            const sState = await getDBusPropertySafe(conn, objectPath, 'org.freedesktop.systemd1.Unit', 'SubState');
             if (sState) subState = sState;
-
-            const stats = await getServiceStats(objectPath, busType);
             if (stats.fragmentPath !== 'N/A') fragmentPath = stats.fragmentPath;
             if (stats.uptime !== 'N/A') uptime = stats.uptime;
             if (stats.ram !== 'N/A') ram = stats.ram;
@@ -221,17 +399,21 @@ export async function getUnitDetails(unitName, busType) {
     // Ultimate Fallback: Parse `systemctl show` if DBus entirely failed us
     if (fragmentPath === 'N/A' || activeState === 'N/A') {
         try {
-            let isFlatpak = GLib.file_test('/.flatpak-info', GLib.FileTest.EXISTS);
-            let cmd = busType === 'system' 
-                ? ['systemctl', 'show', unitName, '--property=ActiveState,SubState,FragmentPath,ActiveEnterTimestampMonotonic,MemoryCurrent'] 
+            const isFlatpak = GLib.file_test('/.flatpak-info', GLib.FileTest.EXISTS);
+            let cmd = busType === 'system'
+                ? ['systemctl', 'show', unitName, '--property=ActiveState,SubState,FragmentPath,ActiveEnterTimestampMonotonic,MemoryCurrent']
                 : ['systemctl', '--user', 'show', unitName, '--property=ActiveState,SubState,FragmentPath,ActiveEnterTimestampMonotonic,MemoryCurrent'];
-            
+
             if (isFlatpak) cmd = ['flatpak-spawn', '--host'].concat(cmd);
 
             const proc = Gio.Subprocess.new(cmd, Gio.SubprocessFlags.STDOUT_PIPE);
             const stdout = await new Promise((resolve) => {
                 proc.communicate_utf8_async(null, null, (p, res) => {
-                    try { resolve(p.communicate_utf8_finish(res)[1] || ''); } catch (e) { resolve(''); }
+                    try {
+                        resolve(p.communicate_utf8_finish(res)[1] || '');
+                    } catch (e) {
+                        resolve('');
+                    }
                 });
             });
 

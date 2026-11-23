@@ -253,3 +253,6 @@ msgstr "Pfad in die Zwischenablage kopiert!"
 
 msgid "Nothing to copy"
 msgstr "Nichts zu kopieren"
+
+msgid "Loading..."
+msgstr "Wird geladen..."

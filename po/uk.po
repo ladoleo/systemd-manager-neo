@@ -253,3 +253,6 @@ msgstr "Шлях скопійовано в буфер обміну!"
 
 msgid "Nothing to copy"
 msgstr "Немає що копіювати"
+
+msgid "Loading..."
+msgstr "Завантаження..."

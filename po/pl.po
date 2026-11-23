@@ -253,3 +253,6 @@ msgstr "Ścieżka skopiowana do schowka!"
 
 msgid "Nothing to copy"
 msgstr "Nie ma nic do skopiowania"
+
+msgid "Loading..."
+msgstr "Wczytywanie..."

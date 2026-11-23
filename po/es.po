@@ -253,3 +253,6 @@ msgstr "¡Ruta copiada al portapapeles!"
 
 msgid "Nothing to copy"
 msgstr "Nada que copiar"
+
+msgid "Loading..."
+msgstr "Cargando..."

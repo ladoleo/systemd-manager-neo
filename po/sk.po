@@ -254,3 +254,6 @@ msgstr "Cesta skopírovaná do schránky!"
 
 msgid "Nothing to copy"
 msgstr "Nič na kopírovanie"
+
+msgid "Loading..."
+msgstr "Načítava sa..."
