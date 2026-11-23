@@ -11,7 +11,13 @@
 import Gio from 'gi://Gio';
 import GLib from 'gi://GLib';
 
+const DEBUG = false;
 let _cachedUnitBuses = null;
+
+function debugLog(...args) {
+    if (DEBUG)
+        console.error('[Systemd Manager Neo]', ...args);
+}
 
 function getSysConn() { return Gio.bus_get_sync(Gio.BusType.SYSTEM, null); }
 function getUsrConn() { return Gio.bus_get_sync(Gio.BusType.SESSION, null); }
@@ -73,7 +79,7 @@ export async function getLoadedServices() {
             }
         });
     } catch (e) {
-        console.error('[Systemd Manager Neo] System DBus Error:', e);
+        debugLog('System DBus Error:', e);
     }
 
     try {
@@ -104,7 +110,7 @@ export async function getLoadedServices() {
             }
         });
     } catch (e) {
-        console.error('[Systemd Manager Neo] User DBus Error:', e);
+        debugLog('User DBus Error:', e);
     }
 
     return units;
@@ -137,7 +143,7 @@ export async function getUnitBuses(forceRefresh = false) {
                     busMap.set(name, busType);
             });
         } catch (e) {
-            console.error(`[Systemd Manager Neo] ${busType} ListUnitFiles Error:`, e);
+            debugLog(`${busType} ListUnitFiles Error:`, e);
         }
     }
 
@@ -250,7 +256,7 @@ async function executeAction(unitName, action, busType) {
         );
         return true;
     } catch (e) {
-        console.error(`[Systemd Manager Neo] DBus ${action} failed for ${unitName} (${busType}):`, e);
+        debugLog(`DBus ${action} failed for ${unitName} (${busType}):`, e);
         if (shouldFallbackToPkexec(e, busType)) {
             const cmdAction = action.replace('Unit', '').toLowerCase();
             return await fallbackSystemctl(cmdAction, unitName, busType);
@@ -299,7 +305,7 @@ export async function enableService(unitName, busType) {
         );
         return true;
     } catch (e) {
-        console.error(`[Systemd Manager Neo] DBus EnableUnitFiles failed for ${unitName} (${busType}):`, e);
+        debugLog(`DBus EnableUnitFiles failed for ${unitName} (${busType}):`, e);
         if (shouldFallbackToPkexec(e, busType))
             return await fallbackSystemctl('enable', unitName, busType);
         return false;
@@ -334,7 +340,7 @@ export async function disableService(unitName, busType) {
         );
         return true;
     } catch (e) {
-        console.error(`[Systemd Manager Neo] DBus DisableUnitFiles failed for ${unitName} (${busType}):`, e);
+        debugLog(`DBus DisableUnitFiles failed for ${unitName} (${busType}):`, e);
         if (shouldFallbackToPkexec(e, busType))
             return await fallbackSystemctl('disable', unitName, busType);
         return false;
@@ -393,7 +399,7 @@ export async function getUnitDetails(unitName, busType) {
             if (stats.ram !== 'N/A') ram = stats.ram;
         }
     } catch (e) {
-        console.error(`[Systemd Manager Neo] Details Error for ${unitName}:`, e);
+        debugLog(`Details Error for ${unitName}:`, e);
     }
 
     // Ultimate Fallback: Parse `systemctl show` if DBus entirely failed us
